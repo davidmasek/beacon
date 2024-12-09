@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"optimisticotter.me/heartbeat-monitor/monitor"
+	"github.com/davidmasek/beacon/monitor"
 )
 
 const (

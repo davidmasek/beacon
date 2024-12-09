@@ -5,9 +5,9 @@ package main
 import (
 	"fmt"
 
+	"github.com/davidmasek/beacon/monitor"
+	"github.com/davidmasek/beacon/storage"
 	"github.com/spf13/viper"
-	"optimisticotter.me/heartbeat-monitor/monitor"
-	"optimisticotter.me/heartbeat-monitor/storage"
 )
 
 func main() {

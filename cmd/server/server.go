@@ -13,9 +13,9 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
-	"optimisticotter.me/heartbeat-monitor/monitor"
-	"optimisticotter.me/heartbeat-monitor/status"
-	"optimisticotter.me/heartbeat-monitor/storage"
+	"github.com/davidmasek/beacon/monitor"
+	"github.com/davidmasek/beacon/status"
+	"github.com/davidmasek/beacon/storage"
 )
 
 func main() {

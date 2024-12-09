@@ -9,7 +9,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/viper"
 
-	"optimisticotter.me/heartbeat-monitor/storage"
+	"github.com/davidmasek/beacon/storage"
 )
 
 type HeartbeatListener struct {
