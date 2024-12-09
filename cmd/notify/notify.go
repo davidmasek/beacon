@@ -75,11 +75,7 @@ func main() {
 			log.Println("[ERROR]", err)
 			continue
 		}
-		timestamps := make([]time.Time, 0)
-		if healthCheck != nil {
-			timestamps = append(timestamps, healthCheck.Timestamp)
-		}
-		serviceStatus, err := config.GetServiceStatus(timestamps)
+		serviceStatus, err := config.GetServiceStatus(healthCheck)
 		if err != nil {
 			log.Println("[ERROR]", err)
 			continue
