@@ -1,8 +1,8 @@
 package monitor
 
 import (
+	"github.com/davidmasek/beacon/storage"
 	"github.com/spf13/viper"
-	"optimisticotter.me/heartbeat-monitor/storage"
 )
 
 type Monitor interface {

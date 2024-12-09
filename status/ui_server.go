@@ -10,8 +10,8 @@ import (
 	"sort"
 	"time"
 
-	"optimisticotter.me/heartbeat-monitor/monitor"
-	"optimisticotter.me/heartbeat-monitor/storage"
+	"github.com/davidmasek/beacon/monitor"
+	"github.com/davidmasek/beacon/storage"
 )
 
 type HeartbeatConfig struct {

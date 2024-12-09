@@ -9,11 +9,11 @@ import (
 	"log"
 	"time"
 
+	"github.com/davidmasek/beacon/handlers"
+	"github.com/davidmasek/beacon/monitor"
+	"github.com/davidmasek/beacon/status"
+	"github.com/davidmasek/beacon/storage"
 	"github.com/spf13/viper"
-	"optimisticotter.me/heartbeat-monitor/handlers"
-	"optimisticotter.me/heartbeat-monitor/monitor"
-	"optimisticotter.me/heartbeat-monitor/status"
-	"optimisticotter.me/heartbeat-monitor/storage"
 )
 
 func main() {
@@ -75,11 +75,7 @@ func main() {
 			log.Println("[ERROR]", err)
 			continue
 		}
-		timestamps := make([]time.Time, 0)
-		if healthCheck != nil {
-			timestamps = append(timestamps, healthCheck.Timestamp)
-		}
-		serviceStatus, err := config.GetServiceStatus(timestamps)
+		serviceStatus, err := config.GetServiceStatus(healthCheck)
 		if err != nil {
 			log.Println("[ERROR]", err)
 			continue
