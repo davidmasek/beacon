@@ -67,8 +67,10 @@ If you want to use Beacon you currently have to run, host and potentially (gasp)
   - need more time to verify / refine
 - 🟡 testing
   - 🟢 unit tests for storage
-  - want at least one end-to-end test
-
+  - 🟡 want at least one end-to-end test
+    - done for heartbeat
+    - want for web
+    - maybe for reports in the future
 
 ## 🚀 Run
 
