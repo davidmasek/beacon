@@ -63,11 +63,11 @@ If you want to use Beacon you currently have to run, host and potentially (gasp)
   - currently needs updates after refactors of other parts
 - 🟡 dev workflow
   - 🟢 basic github setup
-  - want CI for building/testing 
+  - 🟢 CI for building/testing 
+  - need more time to verify / refine
 - 🟡 testing
   - 🟢 unit tests for storage
   - want at least one end-to-end test
-  - want more automation, related to "dev workflow"
 
 
 ## 🚀 Run
