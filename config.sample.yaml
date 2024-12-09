@@ -1,0 +1,18 @@
+websites:
+  beacon-github:
+      url: "https://github.com/davidmasek/beacon"
+      status:
+        - 200
+      content:
+        - Beacon
+
+heartbeats:
+  heartbeat-listener:
+      timeout: 24h
+
+email:
+  smtp_server: mail.something.fake
+  smtp_port: 587
+  smtp_username: something.fake
+  smtp_password: f4ke
+  to: you@something.fake

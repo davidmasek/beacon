@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Status</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .panel {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .panel-summary {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            border-bottom: 1px solid #ddd;
+        }
+        .panel-summary:hover {
+            background: #f8f8f8;
+        }
+        .service-name {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .status {
+            font-size: 14px;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 12px;
+        }
+        .status-OK {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-OTHER {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .status-FAIL {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .last-checked {
+            font-size: 14px;
+            color: #666;
+        }
+        .panel-details {
+            display: none;
+            padding: 15px;
+            font-size: 14px;
+            background: #f9f9f9;
+        }
+        .panel-details ul {
+            margin: 0;
+            padding: 0;
+            list-style-type: none;
+        }
+        .panel-details ul li {
+            margin-bottom: 5px;
+        }
+        .panel.active .panel-details {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Service Status</h1>
+    <div class="container">
+        {{ range . }}
+        <div class="panel">
+            <div class="panel-summary" onclick="togglePanel(this)">
+                <div>
+                    <span class="service-name">{{ .ServiceId }} </span><br>
+                    <span class="last-checked">Last checked: {{ TimeAgo .LatestHealthCheck }}</span>
+                </div>
+                <span class="status status-{{ .CurrentStatus }}">{{ .CurrentStatus }}</span>
+            </div>
+            <div class="panel-details">
+                {{ if HasMetadata .LatestHealthCheck }}
+                    <strong>Metadata:</strong>
+                    <ul>
+                        {{ range $key, $value := .LatestHealthCheck.Metadata }}
+                            <li><strong>{{ $key }}</strong>: {{ $value }}</li>
+                        {{ end }}
+                    </ul>
+                {{ else }}
+                    <strong>No metadata present</strong>
+                {{ end }}
+            </div>
+        </div>
+        {{ end }}
+    </div>
+    <script>
+        function togglePanel(element) {
+            const panel = element.parentElement;
+            panel.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

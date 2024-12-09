@@ -1,0 +1,4 @@
+heartbeats.db
+/tmp
+/bin/*
+/config.yaml
