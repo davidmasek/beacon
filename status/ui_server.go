@@ -1,8 +1,10 @@
 package status
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
+	"github.com/spf13/viper"
 )
 
 type HeartbeatConfig struct {
@@ -99,6 +102,12 @@ func handleIndex(db storage.Storage) http.HandlerFunc {
 		tmpl := template.New("index.html").Funcs(funcMap)
 		cwd, _ := os.Getwd()
 		path := filepath.Join(cwd, "templates", "index.html")
+		// workaround for tests than need different relative path
+		// better fix wanted
+		_, err = os.Stat(path)
+		if errors.Is(err, fs.ErrNotExist) {
+			path = filepath.Join(cwd, "..", "templates", "index.html")
+		}
 		tmpl, err = tmpl.ParseFiles(path)
 		if err != nil {
 			log.Printf("Error parsing template: %v", err)
@@ -112,11 +121,14 @@ func handleIndex(db storage.Storage) http.HandlerFunc {
 	}
 }
 
-func StartWebUI(db storage.Storage) error {
+func StartWebUI(db storage.Storage, viper *viper.Viper) error {
 	http.HandleFunc("/{$}", handleIndex(db))
+	viper.SetDefault("port", "8088")
+	port := viper.GetString("port")
+
 	go func() {
-		fmt.Println("Starting UI server on http://localhost:8089")
-		if err := http.ListenAndServe(":8089", nil); err != nil {
+		fmt.Printf("Starting UI server on http://localhost:%s\n", port)
+		if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
 			log.Print(err)
 			panic(err)
 		}
