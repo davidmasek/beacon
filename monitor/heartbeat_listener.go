@@ -18,11 +18,14 @@ type HeartbeatListener struct {
 // Verify that HeartbeatListener implements Monitor interface
 var _ Monitor = (*HeartbeatListener)(nil)
 
-func (*HeartbeatListener) Start(db storage.Storage, viper *viper.Viper) error {
+func (*HeartbeatListener) Start(db storage.Storage, config *viper.Viper) error {
 	http.HandleFunc("/beat/{service_id}", handleBeat(db))
 	http.HandleFunc("/status/{service_id}", handleStatus(db))
-	viper.SetDefault("port", "8088")
-	port := viper.GetString("port")
+	if config == nil {
+		config = viper.New()
+	}
+	config.SetDefault("port", "8088")
+	port := config.GetString("port")
 
 	go func() {
 		fmt.Printf("Starting HeartbeatListener server on http://localhost:%s\n", port)

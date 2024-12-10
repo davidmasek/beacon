@@ -121,10 +121,13 @@ func handleIndex(db storage.Storage) http.HandlerFunc {
 	}
 }
 
-func StartWebUI(db storage.Storage, viper *viper.Viper) error {
+func StartWebUI(db storage.Storage, config *viper.Viper) error {
+	if config == nil {
+		config = viper.New()
+	}
+	config.SetDefault("port", "8089")
 	http.HandleFunc("/{$}", handleIndex(db))
-	viper.SetDefault("port", "8088")
-	port := viper.GetString("port")
+	port := config.GetString("port")
 
 	go func() {
 		fmt.Printf("Starting UI server on http://localhost:%s\n", port)

@@ -27,7 +27,7 @@ func main() {
 
 	heartbeat_server := monitor.HeartbeatListener{}
 	heartbeat_server.Start(db, nil)
-	status.StartWebUI(db)
+	status.StartWebUI(db, nil)
 	time.Sleep(100 * time.Millisecond)
 	Get("/beat/heartbeat-monitor")
 	Get("/status/heartbeat-monitor")
