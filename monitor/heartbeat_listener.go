@@ -76,7 +76,9 @@ func handleStatus(db storage.Storage) http.HandlerFunc {
 			return
 		}
 		if len(timestamps) == 0 {
-			http.Error(w, "No records for given service", http.StatusNotFound)
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintf(w, "%s @ never", serviceID)
+			return
 		}
 		timestamp := timestamps[0]
 

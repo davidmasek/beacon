@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/status"
@@ -35,6 +36,7 @@ func TestEndToEndHeartbeat(t *testing.T) {
 	viper.Set("port", heartbeatPort)
 	t.Logf("Starting heartbeat listener on port %s\n", heartbeatPort)
 	heartbeat_server := monitor.HeartbeatListener{}
+	// TODO: check return value
 	heartbeat_server.Start(db, viper)
 
 	uiPort := "9001"
@@ -42,7 +44,8 @@ func TestEndToEndHeartbeat(t *testing.T) {
 	t.Logf("Starting web UI on port %s\n", heartbeatPort)
 	status.StartWebUI(db, viper)
 	// Is the sleep needed? Seems to work fine without
-	// time.Sleep(0 * time.Millisecond)
+	// TODO: sometimes needed ... retry for Post might be nicer?
+	time.Sleep(100 * time.Millisecond)
 
 	t.Log("Record heartbeat")
 	input := Post(fmt.Sprintf("/beat/%s", service_name), t)

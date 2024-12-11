@@ -21,15 +21,28 @@ type HeartbeatConfig struct {
 	Timeout time.Duration `mapstructure:"timeout"`
 }
 
-// Calculate service status based on heartbeats and settings
-// heartbeats shall be ordered from newest (first) to oldest (last)
-// TODO: should this maybe receive Storage object?
+// Compute service status based on latest HealthCheck
+// TODO: move this somewhere else
+//
+// TODO: maybe should be used like HealthCheck.GetStatus(config) or smth -> but this way
+// enables healthcheck to be null without special handling outside which might be nice
 func (config *HeartbeatConfig) GetServiceStatus(latestHealthCheck *storage.HealthCheck) (monitor.ServiceState, error) {
 	if latestHealthCheck == nil {
 		return monitor.STATUS_FAIL, nil
 	}
 	if time.Since(latestHealthCheck.Timestamp) > config.Timeout {
 		return monitor.STATUS_FAIL, nil
+	}
+
+	if errorMeta, exists := latestHealthCheck.Metadata["error"]; exists {
+		if errorMeta != "" {
+			return monitor.STATUS_FAIL, nil
+		}
+	}
+	if statusMeta, exists := latestHealthCheck.Metadata["status"]; exists {
+		if statusMeta != string(monitor.STATUS_OK) {
+			return monitor.STATUS_FAIL, nil
+		}
 	}
 	return monitor.STATUS_OK, nil
 }

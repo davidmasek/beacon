@@ -2,3 +2,4 @@ heartbeats.db
 /tmp
 /bin/*
 /config.yaml
+/report.html
