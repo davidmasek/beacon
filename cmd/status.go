@@ -20,7 +20,7 @@ var statusCmd = &cobra.Command{
 			return err
 		}
 		response, err := getStatus(server, args[0])
-		fmt.Println(response)
+		cmd.Println(response)
 		return err
 	},
 }

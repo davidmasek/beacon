@@ -134,20 +134,27 @@ func handleIndex(db storage.Storage) http.HandlerFunc {
 	}
 }
 
-func StartWebUI(db storage.Storage, config *viper.Viper) error {
+func StartWebUI(db storage.Storage, config *viper.Viper) (*http.Server, error) {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/{$}", handleIndex(db))
 	if config == nil {
 		config = viper.New()
 	}
 	config.SetDefault("port", "8089")
-	http.HandleFunc("/{$}", handleIndex(db))
 	port := config.GetString("port")
+
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%s", port),
+		Handler: mux,
+	}
 
 	go func() {
 		fmt.Printf("Starting UI server on http://localhost:%s\n", port)
-		if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
 			log.Print(err)
 			panic(err)
 		}
 	}()
-	return nil
+	return server, nil
 }

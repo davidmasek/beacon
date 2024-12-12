@@ -13,6 +13,7 @@ import (
 	"github.com/davidmasek/beacon/storage"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Prepare test DB
@@ -35,37 +36,41 @@ func TestEndToEndHeartbeat(t *testing.T) {
 	heartbeatPort := "9000"
 	viper.Set("port", heartbeatPort)
 	t.Logf("Starting heartbeat listener on port %s\n", heartbeatPort)
-	heartbeat_server := monitor.HeartbeatListener{}
-	// TODO: check return value
-	heartbeat_server.Start(db, viper)
+	heartbeatListener := monitor.HeartbeatListener{}
+	heartbeatServer, err := heartbeatListener.Start(db, viper)
+	require.NoError(t, err)
+	defer heartbeatServer.Close()
 
 	uiPort := "9001"
 	viper.Set("port", uiPort)
 	t.Logf("Starting web UI on port %s\n", heartbeatPort)
-	status.StartWebUI(db, viper)
+	uiServer, err := status.StartWebUI(db, viper)
+	require.NoError(t, err)
+	defer uiServer.Close()
 	// Is the sleep needed? Seems to work fine without
 	// TODO: sometimes needed ... retry for Post might be nicer?
 	time.Sleep(100 * time.Millisecond)
 
 	t.Log("Record heartbeat")
-	input := Post(fmt.Sprintf("/beat/%s", service_name), t)
+	input := Post(fmt.Sprintf("/beat/%s", service_name), t, heartbeatPort)
 	assert.Contains(t, input, service_name)
 	timestampIn := strings.Split(input, " ")[2]
 
 	t.Log("Retrieve heartbeat status")
-	output := Get(fmt.Sprintf("/status/%s", service_name), t)
+	output := Get(fmt.Sprintf("/status/%s", service_name), t, heartbeatPort)
 	assert.Contains(t, output, service_name)
 	timestampOut := strings.Split(output, " ")[2]
 	assert.Equal(t, timestampIn, timestampOut)
 
 	t.Log("Check web UI")
-	html := Get("/", t)
+	html := Get("/", t, uiPort)
 	assert.Contains(t, html, "<html")
 	assert.Contains(t, html, service_name)
 }
 
-func Post(suffix string, t *testing.T) string {
-	resp, err := http.Post(fmt.Sprintf("http://localhost:9000%s", suffix), "application/json", nil)
+// TODO: could replace with http.Client ?
+func Post(suffix string, t *testing.T, port string) string {
+	resp, err := http.Post(fmt.Sprintf("http://localhost:%s%s", port, suffix), "application/json", nil)
 	if err != nil {
 		t.Fatalf("Unable to POST to %s: %+v", suffix, err)
 	}
@@ -94,8 +99,9 @@ func Post(suffix string, t *testing.T) string {
 	return ""
 }
 
-func Get(suffix string, t *testing.T) string {
-	resp, err := http.Get(fmt.Sprintf("http://localhost:9000%s", suffix))
+// TODO: could replace with http.Client ?
+func Get(suffix string, t *testing.T, port string) string {
+	resp, err := http.Get(fmt.Sprintf("http://localhost:%s%s", port, suffix))
 	if err != nil {
 		t.Fatalf("Unable to GET to %s: %+v", suffix, err)
 	}
