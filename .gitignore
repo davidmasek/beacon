@@ -1,4 +1,8 @@
 heartbeats.db
 /tmp
-/bin/*
+# binaries for air
+/bin
 /config.yaml
+/report.html
+# main binary
+/beacon

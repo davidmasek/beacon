@@ -32,7 +32,10 @@ func (*WebPinger) Start(db storage.Storage, viper *viper.Viper) error {
 	if err != nil {
 		return fmt.Errorf("fatal error unmarshaling config file: %w", err)
 	}
+	return CheckWebsites(db, websites)
+}
 
+func CheckWebsites(db storage.Storage, websites map[string]WebConfig) error {
 	for service, config := range websites {
 		log.Println("Checking website", service)
 		log.Printf("Config: %+v\n", config)
@@ -59,6 +62,7 @@ func (*WebPinger) Start(db storage.Storage, viper *viper.Viper) error {
 		}
 	}
 	return nil
+
 }
 
 func (config *WebConfig) GetServiceStatus() (ServiceState, error) {

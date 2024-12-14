@@ -1,8 +1,8 @@
 # Config file for Air hot-reload
 [build]
-cmd = "go build -o ./bin/server ./cmd/server"
-bin = "server"
-full_bin = "./bin/server"
+cmd = "go build -o ./bin/beacon"
+bin = "beacon"
+full_bin = "./bin/beacon"
 watch_dir = "."
 exclude_dir = ["db", "vendor", "templates"]
 delve = false

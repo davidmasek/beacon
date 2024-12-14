@@ -7,6 +7,7 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/spf13/viper"
 )
 
 // Data needed to persist a new HealthCheck
@@ -214,7 +215,13 @@ func NewSQLStorage(path string) (*SQLStorage, error) {
 
 // Database setup (SQLite in this case)
 func InitDB() (Storage, error) {
-	db, err := NewSQLStorage("./db/heartbeats.db")
+	// TODO: probably should pass this better
+	config := viper.New()
+	config.SetEnvPrefix("BEACON")
+	config.BindEnv("DB")
+	config.SetDefault("DB", "./db/heartbeats.db")
+	dbPath := config.GetString("DB")
+	db, err := NewSQLStorage(dbPath)
 	if err != nil {
 		return nil, err
 	}

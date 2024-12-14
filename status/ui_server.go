@@ -1,8 +1,10 @@
 package status
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -12,21 +14,35 @@ import (
 
 	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
+	"github.com/spf13/viper"
 )
 
 type HeartbeatConfig struct {
 	Timeout time.Duration `mapstructure:"timeout"`
 }
 
-// Calculate service status based on heartbeats and settings
-// heartbeats shall be ordered from newest (first) to oldest (last)
-// TODO: should this maybe receive Storage object?
+// Compute service status based on latest HealthCheck
+// TODO: move this somewhere else
+//
+// TODO: maybe should be used like HealthCheck.GetStatus(config) or smth -> but this way
+// enables healthcheck to be null without special handling outside which might be nice
 func (config *HeartbeatConfig) GetServiceStatus(latestHealthCheck *storage.HealthCheck) (monitor.ServiceState, error) {
 	if latestHealthCheck == nil {
 		return monitor.STATUS_FAIL, nil
 	}
 	if time.Since(latestHealthCheck.Timestamp) > config.Timeout {
 		return monitor.STATUS_FAIL, nil
+	}
+
+	if errorMeta, exists := latestHealthCheck.Metadata["error"]; exists {
+		if errorMeta != "" {
+			return monitor.STATUS_FAIL, nil
+		}
+	}
+	if statusMeta, exists := latestHealthCheck.Metadata["status"]; exists {
+		if statusMeta != string(monitor.STATUS_OK) {
+			return monitor.STATUS_FAIL, nil
+		}
 	}
 	return monitor.STATUS_OK, nil
 }
@@ -99,6 +115,12 @@ func handleIndex(db storage.Storage) http.HandlerFunc {
 		tmpl := template.New("index.html").Funcs(funcMap)
 		cwd, _ := os.Getwd()
 		path := filepath.Join(cwd, "templates", "index.html")
+		// workaround for tests than need different relative path
+		// better fix wanted
+		_, err = os.Stat(path)
+		if errors.Is(err, fs.ErrNotExist) {
+			path = filepath.Join(cwd, "..", "templates", "index.html")
+		}
 		tmpl, err = tmpl.ParseFiles(path)
 		if err != nil {
 			log.Printf("Error parsing template: %v", err)
@@ -112,14 +134,27 @@ func handleIndex(db storage.Storage) http.HandlerFunc {
 	}
 }
 
-func StartWebUI(db storage.Storage) error {
-	http.HandleFunc("/{$}", handleIndex(db))
+func StartWebUI(db storage.Storage, config *viper.Viper) (*http.Server, error) {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/{$}", handleIndex(db))
+	if config == nil {
+		config = viper.New()
+	}
+	config.SetDefault("port", "8089")
+	port := config.GetString("port")
+
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%s", port),
+		Handler: mux,
+	}
+
 	go func() {
-		fmt.Println("Starting UI server on http://localhost:8089")
-		if err := http.ListenAndServe(":8089", nil); err != nil {
+		fmt.Printf("Starting UI server on http://localhost:%s\n", port)
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
 			log.Print(err)
 			panic(err)
 		}
 	}()
-	return nil
+	return server, nil
 }

@@ -3,8 +3,13 @@ package storage
 import (
 	"maps"
 	"math/rand/v2"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Prepare test DB
@@ -14,6 +19,21 @@ func setupDB(t *testing.T) Storage {
 		t.Fatal(err)
 	}
 	return db
+}
+
+// DB location is settable via env variable
+func TestDbPath(t *testing.T) {
+	dir, err := os.MkdirTemp("", "test-beacon")
+	require.Nil(t, err)
+	t.Log("tmp dir:", dir)
+	tmp_file := filepath.Join(dir, "test.db")
+	err = os.Setenv("BEACON_DB", tmp_file)
+	require.Nil(t, err)
+	_, err = InitDB()
+	assert.Nil(t, err)
+	assert.FileExists(t, tmp_file)
+	os.Remove(tmp_file)
+	os.Remove(dir)
 }
 
 // Return multiple ordered timestamps (newest first)
