@@ -14,11 +14,6 @@ type ServiceReport struct {
 	LatestHealthCheck *storage.HealthCheck
 }
 
-type StatusHandler interface {
-	Name() string
-	Handle(servicesInfos []ServiceReport) error
-}
-
 func prettyPrint(details map[string]string) string {
 	jsonData, err := json.MarshalIndent(details, "", "  ")
 	if err != nil {

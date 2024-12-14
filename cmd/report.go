@@ -48,7 +48,7 @@ func init() {
 }
 
 func report(viper *viper.Viper) error {
-	var mailer handlers.StatusHandler
+	var mailer handlers.Mailer
 
 	if viper.GetBool("send-mail") {
 		server, err := handlers.LoadServer(viper.Sub("email"))
@@ -57,11 +57,9 @@ func report(viper *viper.Viper) error {
 		}
 		mailer = handlers.SMTPMailer{
 			Server: server,
-			Target: viper.GetString("email.to"),
-			Env:    viper.GetString("env"),
 		}
 	} else {
-		mailer = handlers.FakeMailer{Target: viper.GetString("email.to")}
+		mailer = handlers.FakeMailer{}
 	}
 
 	db, err := storage.InitDB()
@@ -85,20 +83,22 @@ func report(viper *viper.Viper) error {
 		log.Println("Checking service", service)
 		healthCheck, err := db.LatestHealthCheck(service)
 		if err != nil {
+			// TODO: should probably still include in the report with some explanation
 			log.Println("[ERROR]", err)
 			continue
 		}
 		serviceStatus, err := checkConfig.GetServiceStatus(healthCheck)
 		if err != nil {
+			// TODO: should probably still include in the report with some explanation
 			log.Println("[ERROR]", err)
 			continue
 		}
-		log.Println(serviceStatus)
+		log.Println(" - Service status:", serviceStatus)
 
 		reports = append(reports, handlers.ServiceReport{
 			ServiceId: service, ServiceStatus: serviceStatus, LatestHealthCheck: healthCheck,
 		})
 	}
 
-	return mailer.Handle(reports)
+	return mailer.Send(reports, viper.Sub("email"))
 }

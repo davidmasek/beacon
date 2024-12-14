@@ -15,4 +15,6 @@ email:
   smtp_port: 587
   smtp_username: something.fake
   smtp_password: f4ke
-  to: you@something.fake
+  send_to: you@something.fake
+  sender: you@something.fake
+  prefix: "[dev-example]"
