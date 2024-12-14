@@ -40,37 +40,7 @@ Beacon is just starting and some things may be under construction 🚧, or not e
 
 If you want to use Beacon you currently have to run, host and potentially (gasp) debug it yourself (although I do offer help if needed). A publicly available running instance is planned, so you don't have to do it all.
 
-🚧 Feature list:
-- 🟢 heartbeat listener
-  - 🟢 HTTP server
-  - 🟢 persistence
-  - 🟡 stable API
-- 🟡 web GUI
-  - currently displays the main information
-  - should also support management
-  - related to the other "management" features
-- 🟡 website monitor
-  - needs more testing
-  - needs periodic run solution
-- 🟡 heartbeat/website management
-  - currently hardcoded, needs more dynamic approach
-  - needs refactor
-- 🔴 user management
-  - this is currently a blocker for stable API and public instance
-- 🔴 friendly app configuration
-  - this is an inconvenience for potential users
-- 🔴 notifications
-  - currently needs updates after refactors of other parts
-- 🟡 dev workflow
-  - 🟢 basic github setup
-  - 🟢 CI for building/testing 
-  - need more time to verify / refine
-- 🟡 testing
-  - 🟢 unit tests for storage
-  - 🟡 want at least one end-to-end test
-    - done for heartbeat
-    - want for web
-    - maybe for reports in the future
+Development notes and more detailed status is available in [README-dev](README-dev.md).
 
 ## 🚀 Run
 
@@ -87,36 +57,17 @@ go run ./cmd/server
 ## ⚙️ Build
 
 ```sh
-go build -v -o bin ./...
+# build a single binary called `beacon`
+go build
 ```
 
 ## 🔬  Test
 
 ```sh
+# go tests
+go test ./...
+# verbose mode
 go test -v ./...
+# disable cache
+go test -count=1 ./...
 ```
-
-## 🛠️ Dev
-
-Some design choices:
-- storage:
-    - single type called HealthCheck for storing data in DB
-    - need for different fields will be accommodated by using Metadata field, which is dynamic map
-    - for creating new data there is HealthCheckInput - currently same as HealthCheck without ID, in future possibly different
-- naming conventions:
-    - ID will be lowercased when used in variable name - FooId - to follow CamelCaseNaming
-- dependency chain / architecture:
-    - storage < monitor < handlers < status < cmd
-    - storage (DB) is the base, handles persistence, should depend on nothing (nothing internal, can depend e.g. on SQLite)
-    - monitors interact with the outside world and store health checks to DB
-    - handlers / status
-        - the idea was that "status" evaluates if something is OK or not and "handlers" then handle the result
-        - a bit of a mess currently
-        - should read DB and react in some way:
-        - display / generate reports
-        - send notifications
-    - cmd
-        - entrypoints
-        - can depend on anything (apart from each other)
-        - should be simple and high-level
-

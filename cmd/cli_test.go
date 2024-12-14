@@ -71,15 +71,6 @@ func TestHeartbeat(t *testing.T) {
 	require.Empty(t, outputBuffer)
 
 	// We run the server directly from code (not using CLI).
-	// Otherwise we would need to run it concurrently,
-	// which is not easily doable using cobra.Command AFAIK.
-	// Alternative is to run it as a separate process with os.exec
-	// but that brings more complexity, increases runtime of this
-	// test significantly, and requires cleanup. The cleanup
-	// is especially complex when running using "go run",
-	// as that would spawn the server in other process than
-	// the "go run" command.
-	// Considering all this, let's keep it simple for now.
 	// TODO: server startup needs unification (CLI vs this test vs other tests)
 	db, err := storage.InitDB()
 	require.NoError(t, err)
