@@ -2,11 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"log"
-	"time"
 
 	"github.com/davidmasek/beacon/handlers"
-	"github.com/davidmasek/beacon/status"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -68,36 +65,9 @@ func report(viper *viper.Viper) error {
 	}
 	defer db.Close()
 
-	reports := make([]handlers.ServiceReport, 0)
-
-	services, err := db.ListServices()
+	reports, err := handlers.GenerateReport(db)
 	if err != nil {
 		return err
-	}
-
-	checkConfig := status.HeartbeatConfig{
-		Timeout: 24 * time.Hour,
-	}
-
-	for _, service := range services {
-		log.Println("Checking service", service)
-		healthCheck, err := db.LatestHealthCheck(service)
-		if err != nil {
-			// TODO: should probably still include in the report with some explanation
-			log.Println("[ERROR]", err)
-			continue
-		}
-		serviceStatus, err := checkConfig.GetServiceStatus(healthCheck)
-		if err != nil {
-			// TODO: should probably still include in the report with some explanation
-			log.Println("[ERROR]", err)
-			continue
-		}
-		log.Println(" - Service status:", serviceStatus)
-
-		reports = append(reports, handlers.ServiceReport{
-			ServiceId: service, ServiceStatus: serviceStatus, LatestHealthCheck: healthCheck,
-		})
 	}
 
 	return mailer.Send(reports, viper.Sub("email"))
