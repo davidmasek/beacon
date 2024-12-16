@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/davidmasek/beacon/handlers"
 	"github.com/davidmasek/beacon/monitor"
-	"github.com/davidmasek/beacon/status"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -81,7 +81,7 @@ func TestHeartbeat(t *testing.T) {
 	require.NoError(t, err)
 	defer heartbeatServer.Close()
 	config.Set("port", uiPort)
-	uiServer, err := status.StartWebUI(db, config)
+	uiServer, err := handlers.StartWebUI(db, config)
 	require.NoError(t, err)
 	defer uiServer.Close()
 

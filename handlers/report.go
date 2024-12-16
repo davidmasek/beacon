@@ -4,7 +4,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/davidmasek/beacon/status"
 	"github.com/davidmasek/beacon/storage"
 )
 
@@ -16,7 +15,7 @@ func GenerateReport(db storage.Storage) ([]ServiceReport, error) {
 		return nil, err
 	}
 
-	checkConfig := status.HeartbeatConfig{
+	checkConfig := ServiceChecker{
 		Timeout: 24 * time.Hour,
 	}
 

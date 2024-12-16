@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -29,12 +30,12 @@ func TestWriteReport(t *testing.T) {
 	serviceStatusFail := "gamma-should-fail"
 	serviceError := "delta-should-fail"
 	serviceGoodWithStatus := "epsilon-should-pass"
-	expectedStates := []monitor.ServiceState{
-		monitor.STATUS_OK,
-		monitor.STATUS_FAIL,
-		monitor.STATUS_FAIL,
-		monitor.STATUS_FAIL,
-		monitor.STATUS_OK,
+	expectedStates := map[string]monitor.ServiceState{
+		serviceGood:           monitor.STATUS_OK,
+		serviceTimeout:        monitor.STATUS_FAIL,
+		serviceStatusFail:     monitor.STATUS_FAIL,
+		serviceError:          monitor.STATUS_FAIL,
+		serviceGoodWithStatus: monitor.STATUS_OK,
 	}
 
 	err := db.AddHealthCheck(&storage.HealthCheckInput{
@@ -75,10 +76,15 @@ func TestWriteReport(t *testing.T) {
 	reports, err := GenerateReport(db)
 	require.NoError(t, err)
 
-	require.Len(t, reports, len(expectedStates))
-	for i := range reports {
-		reported := reports[i].ServiceStatus
-		expected := expectedStates[i]
+	assert.Len(t, reports, len(expectedStates))
+	for serviceId := range expectedStates {
+		idx := slices.IndexFunc(reports, func(report ServiceReport) bool {
+			return report.ServiceId == serviceId
+		})
+		require.GreaterOrEqualf(t, idx, 0, "Service %s not found in reports", serviceId)
+
+		reported := reports[idx].ServiceStatus
+		expected := expectedStates[serviceId]
 		assert.Equal(t, expected, reported)
 	}
 }

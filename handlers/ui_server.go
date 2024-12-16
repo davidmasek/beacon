@@ -1,4 +1,4 @@
-package status
+package handlers
 
 import (
 	"errors"
@@ -10,45 +10,13 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"time"
 
 	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/spf13/viper"
 )
 
-type HeartbeatConfig struct {
-	Timeout time.Duration `mapstructure:"timeout"`
-}
-
-// Compute service status based on latest HealthCheck
-// TODO: move this somewhere else
-//
-// TODO: maybe should be used like HealthCheck.GetStatus(config) or smth -> but this way
-// enables healthcheck to be null without special handling outside which might be nice
-func (config *HeartbeatConfig) GetServiceStatus(latestHealthCheck *storage.HealthCheck) (monitor.ServiceState, error) {
-	if latestHealthCheck == nil {
-		return monitor.STATUS_FAIL, nil
-	}
-	if time.Since(latestHealthCheck.Timestamp) > config.Timeout {
-		return monitor.STATUS_FAIL, nil
-	}
-
-	if errorMeta, exists := latestHealthCheck.Metadata["error"]; exists {
-		if errorMeta != "" {
-			return monitor.STATUS_FAIL, nil
-		}
-	}
-	if statusMeta, exists := latestHealthCheck.Metadata["status"]; exists {
-		if statusMeta != string(monitor.STATUS_OK) {
-			return monitor.STATUS_FAIL, nil
-		}
-	}
-	return monitor.STATUS_OK, nil
-}
-
-// Handler for / to show services and recent heartbeats
-// Enhancement: SQL Groupby instead of this bullshit
+// Show services status
 func handleIndex(db storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		serviceNames, err := db.ListServices()
@@ -65,20 +33,18 @@ func handleIndex(db storage.Storage) http.HandlerFunc {
 			CurrentStatus     monitor.ServiceState
 		}
 		var services []ServiceStatus
+		serviceChecker := DefaultServiceChecker()
 		for _, serviceId := range serviceNames {
 			healthCheck, err := db.LatestHealthCheck(serviceId)
 			if err != nil {
-				// TODO: should log error
-				http.Error(w, "Failed to fetch heartbeats", http.StatusInternalServerError)
+				log.Printf("Failed to load health check: %s", err)
+				http.Error(w, "Failed to load health check", http.StatusInternalServerError)
 				return
 			}
 
-			// TODO: currently uses default config build right here and ignores any settings
-			// should load settings in the way it's done (depending on how it's done when we get to this)
-			// TODO - BUG: this uses heartbeat config - but the service doesn't have to of that type (i.e. it's a website)
-			config := HeartbeatConfig{Timeout: 24 * time.Hour}
-			serviceStatus, err := config.GetServiceStatus(healthCheck)
+			serviceStatus, err := serviceChecker.GetServiceStatus(healthCheck)
 			if err != nil {
+				log.Printf("Failed to calculate service status: %s", err)
 				http.Error(w, "Failed to calculate service status", http.StatusInternalServerError)
 				return
 			}
