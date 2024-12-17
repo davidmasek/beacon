@@ -26,7 +26,9 @@ func (config *ServiceChecker) GetServiceStatus(latestHealthCheck *storage.Health
 		log.Println("[GetServiceStatus] no health check found")
 		return monitor.STATUS_FAIL, nil
 	}
-	if time.Since(latestHealthCheck.Timestamp) > config.Timeout {
+	timeAgo := time.Since(latestHealthCheck.Timestamp)
+	log.Printf("timeout: %s, timeAgo: %s", config.Timeout.String(), timeAgo.String())
+	if timeAgo > config.Timeout {
 		return monitor.STATUS_FAIL, nil
 	}
 

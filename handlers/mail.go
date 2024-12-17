@@ -5,47 +5,16 @@ import (
 	"fmt"
 	"log"
 	"net/smtp"
-	"os"
 	"strings"
 
 	"github.com/spf13/viper"
 )
 
-type Mailer interface {
-	Send(reports []ServiceReport, config *viper.Viper) error
-}
-
-// TODO/feature
-// TODO: re-fit FakeMailer to smth like "FileReport"
-// use as default and use SMTP as extra if there is the --send-mail flag
-type FakeMailer struct{}
-
-func (fm FakeMailer) Send(reports []ServiceReport, config *viper.Viper) error {
-	// Create or truncate the output file
-	filename := "report.html"
-	log.Printf("[FakeMailer] Writing report to %s", filename)
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	err = WriteReport(reports, file)
-	if err != nil {
-		return err
-	}
-
-	target := config.GetString("send_to")
-
-	log.Printf("[FakeMailer] Saved to %s. Would be send to %q", filename, target)
-	return nil
-}
-
 type SMTPMailer struct {
 	Server SMTPServer
 }
 
-func (sm SMTPMailer) Send(reports []ServiceReport, config *viper.Viper) error {
+func (sm SMTPMailer) Send(reports []ServiceReport, emailConfig *viper.Viper) error {
 	var buffer bytes.Buffer
 
 	log.Printf("[SMTPMailer] Generating report")
@@ -54,19 +23,19 @@ func (sm SMTPMailer) Send(reports []ServiceReport, config *viper.Viper) error {
 		return err
 	}
 
-	config.SetDefault("prefix", "")
-	prefix := config.GetString("prefix")
+	emailConfig.SetDefault("prefix", "")
+	prefix := emailConfig.GetString("prefix")
 	// add whitespace after prefix if it exists and is not included already
 	if prefix != "" && strings.HasSuffix(prefix, " ") {
 		prefix = prefix + " "
 	}
 
 	subject := fmt.Sprintf("%sBeacon: Status Report", prefix)
-	target := config.GetString("send_to")
+	target := emailConfig.GetString("send_to")
 	log.Printf("[SMTPMailer] Sending email with subject %q to %q", subject, target)
 	err = SendMail(
 		sm.Server,
-		config.GetString("sender"),
+		emailConfig.GetString("sender"),
 		target,
 		subject,
 		buffer.String(),
@@ -86,14 +55,13 @@ type SMTPServer struct {
 	password string
 }
 
-// Load the SMTP server details from the .env file
-func LoadServer(config *viper.Viper) (SMTPServer, error) {
-	// TODO: error handling
+// Load the SMTP server details from config
+func LoadServer(emailConfig *viper.Viper) (SMTPServer, error) {
 	return SMTPServer{
-		server:   config.GetString("SMTP_SERVER"),
-		port:     config.GetString("SMTP_PORT"),
-		username: config.GetString("SMTP_USERNAME"),
-		password: config.GetString("SMTP_PASSWORD"),
+		server:   emailConfig.GetString("SMTP_SERVER"),
+		port:     emailConfig.GetString("SMTP_PORT"),
+		username: emailConfig.GetString("SMTP_USERNAME"),
+		password: emailConfig.GetString("SMTP_PASSWORD"),
 	}, nil
 }
 

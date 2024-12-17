@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/davidmasek/beacon/handlers"
 	"github.com/davidmasek/beacon/storage"
@@ -41,24 +43,10 @@ func init() {
 	rootCmd.AddCommand(reportCmd)
 
 	reportCmd.Flags().Bool("send-mail", false, "Send email notifications")
-	reportCmd.Flags().String("name", "dev-report", "Report name")
+	reportCmd.Flags().String("name", "report", "Report name")
 }
 
 func report(viper *viper.Viper) error {
-	var mailer handlers.Mailer
-
-	if viper.GetBool("send-mail") {
-		server, err := handlers.LoadServer(viper.Sub("email"))
-		if err != nil {
-			return fmt.Errorf("failed to load SMTP server: %w", err)
-		}
-		mailer = handlers.SMTPMailer{
-			Server: server,
-		}
-	} else {
-		mailer = handlers.FakeMailer{}
-	}
-
 	db, err := storage.InitDB()
 	if err != nil {
 		return err
@@ -70,5 +58,30 @@ func report(viper *viper.Viper) error {
 		return err
 	}
 
-	return mailer.Send(reports, viper.Sub("email"))
+	filename := viper.GetString("report-name")
+
+	if !strings.HasSuffix(filename, ".html") {
+		filename = fmt.Sprintf("%s.html", filename)
+	}
+
+	// proceed to send email even if writing to file fails
+	// as it is better if at least one of the two succeeds
+	err = handlers.WriteReportToFile(reports, filename)
+
+	if viper.GetBool("send-mail") {
+		var emailErr error
+		server, emailErr := handlers.LoadServer(viper.Sub("email"))
+		if emailErr != nil {
+			emailErr := fmt.Errorf("failed to load SMTP server: %w", err)
+			err = errors.Join(err, emailErr)
+			return err
+		}
+		mailer := handlers.SMTPMailer{
+			Server: server,
+		}
+		emailErr = mailer.Send(reports, viper.Sub("email"))
+		err = errors.Join(err, emailErr)
+	}
+
+	return err
 }

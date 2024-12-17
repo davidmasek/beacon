@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -10,6 +11,49 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var testServicesInput = []storage.HealthCheckInput{
+	{
+		ServiceId: "recent-beat-should-pass",
+		Timestamp: time.Now().Add(-time.Hour),
+	},
+	{
+		ServiceId: "long-ago-should-fail",
+		Timestamp: time.Now().Add(-time.Hour * 24 * 14),
+	},
+	{
+		ServiceId: "with-bad-status-should-fail",
+		Timestamp: time.Now().Add(-time.Hour),
+		Metadata: map[string]string{
+			"status": "totally-not-good",
+		},
+	},
+	{
+		ServiceId: "with-error-should-fail",
+		Timestamp: time.Now().Add(-time.Hour),
+		Metadata: map[string]string{
+			"error": "cannot foo the bar",
+		},
+	},
+	{
+		ServiceId: "with-explicit-status-should-pass",
+		Timestamp: time.Now().Add(-time.Hour),
+		Metadata: map[string]string{
+			"status": string(monitor.STATUS_OK),
+		},
+	},
+}
+
+func expectedStateFromName(t *testing.T, name string) monitor.ServiceState {
+	if strings.HasSuffix(name, "should-pass") {
+		return monitor.STATUS_OK
+	}
+	if strings.HasSuffix(name, "should-fail") {
+		return monitor.STATUS_FAIL
+	}
+	t.Fatalf("invalid test service name %q - invalid suffix", name)
+	return monitor.STATUS_FAIL
+}
 
 // Prepare test DB
 func setupDB(t *testing.T) storage.Storage {
@@ -20,71 +64,28 @@ func setupDB(t *testing.T) storage.Storage {
 	return db
 }
 
-// TODO/feature: FIXME
 func TestWriteReport(t *testing.T) {
 	db := setupDB(t)
 	defer db.Close()
 
-	serviceGood := "alpha-should-pass"
-	serviceTimeout := "beta-should-fail"
-	serviceStatusFail := "gamma-should-fail"
-	serviceError := "delta-should-fail"
-	serviceGoodWithStatus := "epsilon-should-pass"
-	expectedStates := map[string]monitor.ServiceState{
-		serviceGood:           monitor.STATUS_OK,
-		serviceTimeout:        monitor.STATUS_FAIL,
-		serviceStatusFail:     monitor.STATUS_FAIL,
-		serviceError:          monitor.STATUS_FAIL,
-		serviceGoodWithStatus: monitor.STATUS_OK,
+	for _, input := range testServicesInput {
+		err := db.AddHealthCheck(&input)
+		require.NoError(t, err)
 	}
-
-	err := db.AddHealthCheck(&storage.HealthCheckInput{
-		ServiceId: serviceGood,
-		Timestamp: time.Now().Add(-time.Hour),
-	})
-	require.NoError(t, err)
-	err = db.AddHealthCheck(&storage.HealthCheckInput{
-		ServiceId: serviceTimeout,
-		Timestamp: time.Now().Add(-time.Hour * 24 * 14),
-	})
-	require.NoError(t, err)
-	err = db.AddHealthCheck(&storage.HealthCheckInput{
-		ServiceId: serviceStatusFail,
-		Timestamp: time.Now().Add(-time.Hour),
-		Metadata: map[string]string{
-			"status": "totally-not-good",
-		},
-	})
-	require.NoError(t, err)
-	err = db.AddHealthCheck(&storage.HealthCheckInput{
-		ServiceId: serviceError,
-		Timestamp: time.Now().Add(-time.Hour),
-		Metadata: map[string]string{
-			"status": string(monitor.STATUS_OK),
-		},
-	})
-	require.NoError(t, err)
-	err = db.AddHealthCheck(&storage.HealthCheckInput{
-		ServiceId: serviceGoodWithStatus,
-		Timestamp: time.Now().Add(-time.Hour),
-		Metadata: map[string]string{
-			"error": "something really bad happened",
-		},
-	})
-	require.NoError(t, err)
 
 	reports, err := GenerateReport(db)
 	require.NoError(t, err)
 
-	assert.Len(t, reports, len(expectedStates))
-	for serviceId := range expectedStates {
+	assert.Len(t, reports, len(testServicesInput))
+	for _, input := range testServicesInput {
+		serviceId := input.ServiceId
 		idx := slices.IndexFunc(reports, func(report ServiceReport) bool {
 			return report.ServiceId == serviceId
 		})
 		require.GreaterOrEqualf(t, idx, 0, "Service %s not found in reports", serviceId)
 
 		reported := reports[idx].ServiceStatus
-		expected := expectedStates[serviceId]
+		expected := expectedStateFromName(t, serviceId)
 		assert.Equal(t, expected, reported)
 	}
 }
