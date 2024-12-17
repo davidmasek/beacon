@@ -45,13 +45,9 @@ Development notes and more detailed status is available in [README-dev](README-d
 ## 🚀 Run
 
 ```sh
-# for server - with hot reload
-air
+go install github.com/davidmasek/beacon@latest
 
-# run monitors (i.e. check stuff)
-go run ./cmd/monitor
-# server - display UI + listen for heartbeats
-go run ./cmd/server
+beacon start
 ```
 
 ## ⚙️ Build

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/davidmasek/beacon/handlers"
 	"github.com/davidmasek/beacon/monitor"
-	"github.com/davidmasek/beacon/status"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -44,7 +44,7 @@ func TestEndToEndHeartbeat(t *testing.T) {
 	uiPort := "9001"
 	viper.Set("port", uiPort)
 	t.Logf("Starting web UI on port %s\n", heartbeatPort)
-	uiServer, err := status.StartWebUI(db, viper)
+	uiServer, err := handlers.StartWebUI(db, viper)
 	require.NoError(t, err)
 	defer uiServer.Close()
 	// Is the sleep needed? Seems to work fine without

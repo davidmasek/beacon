@@ -14,6 +14,8 @@ var rootCmd = &cobra.Command{
 	
 	This CLI enables you to starting individual Beacon components,
 	manage your projects, and communicate with Beacon.
+
+	https://github.com/davidmasek/beacon
 	`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:

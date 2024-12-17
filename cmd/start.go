@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/davidmasek/beacon/handlers"
 	"github.com/davidmasek/beacon/monitor"
-	"github.com/davidmasek/beacon/status"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -43,7 +43,7 @@ var startCmd = &cobra.Command{
 			return err
 		}
 		config.Set("port", guiPort)
-		uiServer, err := status.StartWebUI(db, config)
+		uiServer, err := handlers.StartWebUI(db, config)
 		if err != nil {
 			return err
 		}

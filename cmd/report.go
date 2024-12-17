@@ -1,12 +1,11 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
-	"log"
-	"time"
+	"strings"
 
 	"github.com/davidmasek/beacon/handlers"
-	"github.com/davidmasek/beacon/status"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -44,61 +43,45 @@ func init() {
 	rootCmd.AddCommand(reportCmd)
 
 	reportCmd.Flags().Bool("send-mail", false, "Send email notifications")
-	reportCmd.Flags().String("name", "dev-report", "Report name")
+	reportCmd.Flags().String("name", "report", "Report name")
 }
 
 func report(viper *viper.Viper) error {
-	var mailer handlers.StatusHandler
-
-	if viper.GetBool("send-mail") {
-		server, err := handlers.LoadServer(viper.Sub("email"))
-		if err != nil {
-			return fmt.Errorf("failed to load SMTP server: %w", err)
-		}
-		mailer = handlers.SMTPMailer{
-			Server: server,
-			Target: viper.GetString("email.to"),
-			Env:    viper.GetString("env"),
-		}
-	} else {
-		mailer = handlers.FakeMailer{Target: viper.GetString("email.to")}
-	}
-
 	db, err := storage.InitDB()
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	reports := make([]handlers.ServiceReport, 0)
-
-	services, err := db.ListServices()
+	reports, err := handlers.GenerateReport(db)
 	if err != nil {
 		return err
 	}
 
-	checkConfig := status.HeartbeatConfig{
-		Timeout: 24 * time.Hour,
+	filename := viper.GetString("report-name")
+
+	if !strings.HasSuffix(filename, ".html") {
+		filename = fmt.Sprintf("%s.html", filename)
 	}
 
-	for _, service := range services {
-		log.Println("Checking service", service)
-		healthCheck, err := db.LatestHealthCheck(service)
-		if err != nil {
-			log.Println("[ERROR]", err)
-			continue
-		}
-		serviceStatus, err := checkConfig.GetServiceStatus(healthCheck)
-		if err != nil {
-			log.Println("[ERROR]", err)
-			continue
-		}
-		log.Println(serviceStatus)
+	// proceed to send email even if writing to file fails
+	// as it is better if at least one of the two succeeds
+	err = handlers.WriteReportToFile(reports, filename)
 
-		reports = append(reports, handlers.ServiceReport{
-			ServiceId: service, ServiceStatus: serviceStatus, LatestHealthCheck: healthCheck,
-		})
+	if viper.GetBool("send-mail") {
+		var emailErr error
+		server, emailErr := handlers.LoadServer(viper.Sub("email"))
+		if emailErr != nil {
+			emailErr := fmt.Errorf("failed to load SMTP server: %w", err)
+			err = errors.Join(err, emailErr)
+			return err
+		}
+		mailer := handlers.SMTPMailer{
+			Server: server,
+		}
+		emailErr = mailer.Send(reports, viper.Sub("email"))
+		err = errors.Join(err, emailErr)
 	}
 
-	return mailer.Handle(reports)
+	return err
 }

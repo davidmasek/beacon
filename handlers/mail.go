@@ -5,62 +5,43 @@ import (
 	"fmt"
 	"log"
 	"net/smtp"
-	"os"
+	"strings"
 
 	"github.com/spf13/viper"
 )
 
-type FakeMailer struct {
-	Target string
-}
-
-func (fm FakeMailer) Name() string {
-	return "FakeMailer"
-}
-
-func (fm FakeMailer) Handle(reports []ServiceReport) error {
-	// Create or truncate the output file
-	filename := "report.html"
-	log.Printf("[%s] Writing report to %s", fm.Name(), filename)
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	err = WriteReport(reports, file)
-	if err != nil {
-		return err
-	}
-
-	log.Printf("[%s] Saved to %s. Would be send to %q", fm.Name(), filename, fm.Target)
-	return nil
-}
-
 type SMTPMailer struct {
 	Server SMTPServer
-	Target string
-	Env    string
 }
 
-func (sm SMTPMailer) Name() string {
-	return "SMTPMailer"
-}
-
-func (sm SMTPMailer) Handle(reports []ServiceReport) error {
+func (sm SMTPMailer) Send(reports []ServiceReport, emailConfig *viper.Viper) error {
 	var buffer bytes.Buffer
 
-	log.Printf("[%s] Generating report", sm.Name())
+	log.Printf("[SMTPMailer] Generating report")
 	err := WriteReport(reports, &buffer)
 	if err != nil {
 		return err
 	}
 
-	subject := fmt.Sprintf("[%s] Heartbeat report", sm.Env)
-	log.Printf("[%s] Sending email with subject %q to %q", sm.Name(), subject, sm.Target)
-	err = SendMail(sm.Server, subject, buffer.String())
+	emailConfig.SetDefault("prefix", "")
+	prefix := emailConfig.GetString("prefix")
+	// add whitespace after prefix if it exists and is not included already
+	if prefix != "" && strings.HasSuffix(prefix, " ") {
+		prefix = prefix + " "
+	}
+
+	subject := fmt.Sprintf("%sBeacon: Status Report", prefix)
+	target := emailConfig.GetString("send_to")
+	log.Printf("[SMTPMailer] Sending email with subject %q to %q", subject, target)
+	err = SendMail(
+		sm.Server,
+		emailConfig.GetString("sender"),
+		target,
+		subject,
+		buffer.String(),
+	)
 	if err != nil {
-		log.Printf("[%s] Failed to send email: %v", sm.Name(), err)
+		log.Printf("[SMTPMailer] Failed to send email: %v", err)
 		return err
 	}
 
@@ -74,31 +55,27 @@ type SMTPServer struct {
 	password string
 }
 
-// Load the SMTP server details from the .env file
-func LoadServer(viper *viper.Viper) (SMTPServer, error) {
-	// TODO: error handling
+// Load the SMTP server details from config
+func LoadServer(emailConfig *viper.Viper) (SMTPServer, error) {
 	return SMTPServer{
-		server:   viper.GetString("SMTP_SERVER"),
-		port:     viper.GetString("SMTP_PORT"),
-		username: viper.GetString("SMTP_USERNAME"),
-		password: viper.GetString("SMTP_PASSWORD"),
+		server:   emailConfig.GetString("SMTP_SERVER"),
+		port:     emailConfig.GetString("SMTP_PORT"),
+		username: emailConfig.GetString("SMTP_USERNAME"),
+		password: emailConfig.GetString("SMTP_PASSWORD"),
 	}, nil
 }
 
-func SendMail(server SMTPServer, subject string, body string) error {
-	// Email details
-	sender := "noreply@optimisticotter.me"
-	recipient := "davidmasek42@gmail.com"
+func SendMail(server SMTPServer, sender string, target string, subject string, body string) error {
 	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\""
 
 	// Format the email message
 	msg := "From: " + sender + "\n" +
-		"To: " + recipient + "\n" +
+		"To: " + target + "\n" +
 		"Subject: " + subject + "\n" +
 		mime + "\n\n" + body
 
 	// Connect to the SMTP server
 	auth := smtp.PlainAuth("", server.username, server.password, server.server)
-	err := smtp.SendMail(server.server+":"+server.port, auth, sender, []string{recipient}, []byte(msg))
+	err := smtp.SendMail(server.server+":"+server.port, auth, sender, []string{target}, []byte(msg))
 	return err
 }

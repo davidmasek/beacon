@@ -67,16 +67,14 @@ Some design choices:
 - naming conventions:
     - ID will be lowercased when used in variable name - FooId - to follow CamelCaseNaming
 - dependency chain / architecture:
-    - storage < monitor < handlers < status < cmd
+    - storage < monitor < handlers < cmd
     - storage (DB) is the base, handles persistence, should depend on nothing (nothing internal, can depend e.g. on SQLite)
     - monitors interact with the outside world and store health checks to DB
-    - handlers / status
-        - the idea was that "status" evaluates if something is OK or not and "handlers" then handle the result
-        - a bit of a mess currently
-        - should read DB and react in some way:
-        - display / generate reports
-        - send notifications
+    - handlers
+      - take data from DB and do something with it
+      - display / generate reports
+      - send notifications
     - cmd
-        - entrypoints
-        - can depend on anything (apart from each other)
-        - should be simple and high-level
+      - entrypoints
+      - can depend on anything (apart from each other)
+      - should be simple and high-level
