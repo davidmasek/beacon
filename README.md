@@ -14,6 +14,27 @@ The goal of this app is to help you track the health of your projects (= everyth
 
 There are two main ways to use Beacon: website flow 🌐 and  heartbeat flow ❤️.
 
+## Quickstart
+
+```sh
+# install as executable
+go install github.com/davidmasek/beacon@latest
+
+# TODO: config
+
+# start server
+beacon start
+```
+
+### Docker
+
+```sh
+# TODO: copy config (.sample.yaml -> .yaml ?)
+# TODO: use for testing
+docker build -t beacon .
+docker run --rm -p 8080:8080 -p 8089:8089 beacon start
+```
+
 ## 🌐 Website flow
 
 You have a website. You point Beacon to it. Beacon continually checks that it is online. If it's not running you get a notification. 

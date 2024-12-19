@@ -6,7 +6,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download && go mod verify
 
-# TODO: not updated
 COPY . .
-RUN go build -v -o /app/main ./...
-CMD ["./main"]
+RUN go build
+
+ENTRYPOINT ["./beacon"]
