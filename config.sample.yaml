@@ -11,10 +11,10 @@ heartbeats:
       timeout: 24h
 
 email:
-  smtp_server: mail.something.fake
-  smtp_port: 587
-  smtp_username: something.fake
-  smtp_password: f4ke
-  send_to: you@something.fake
-  sender: you@something.fake
-  prefix: "[dev-example]"
+  smtp_server: mailcatcher
+  smtp_port: 1025
+  smtp_username: beacon
+  smtp_password:
+  send_to: beacon@optimisticotter.com
+  sender: noreply@optimisticotter.com
+  prefix: "[dev]"

@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/davidmasek/beacon/handlers"
@@ -27,11 +28,15 @@ var reportCmd = &cobra.Command{
 
 		// TODO: look into how viper/cobra should be used together
 		viper := viper.New()
+		viper.SetConfigName("beacon.yaml")
+		viper.SetConfigType("yaml")
 		viper.AddConfigPath(".")
+		viper.AddConfigPath("$HOME/")
 		err = viper.ReadInConfig()
 		if err != nil {
-			return fmt.Errorf("fatal error reading config file: %w", err)
+			return fmt.Errorf("fatal error reading config file %q: %w", viper.ConfigFileUsed(), err)
 		}
+		log.Printf("Read config from %q", viper.ConfigFileUsed())
 		viper.Set("send-mail", sendMail)
 		viper.Set("report-name", reportName)
 

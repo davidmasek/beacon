@@ -1,0 +1,3 @@
+services:
+  beacon:
+    entrypoint: "./e2e_docker.sh"
