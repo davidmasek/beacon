@@ -4,9 +4,11 @@ WORKDIR /app
 
 # pre-copy/cache go.mod for pre-downloading dependencies and only re-downloading them in subsequent builds if they change
 COPY go.mod go.sum ./
-RUN go mod download && go mod verify
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download && go mod verify
 
 COPY . .
-RUN go build
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    go build
 
 ENTRYPOINT ["./beacon"]

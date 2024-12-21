@@ -1,0 +1,20 @@
+services:
+  beacon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8088:8088"
+      - "8089:8089"
+    environment:
+      - SMTP_HOST=mailcatcher
+      - SMTP_PORT=1025
+    depends_on:
+      - mailcatcher
+    command: start
+
+  mailcatcher:
+    image: schickling/mailcatcher
+    ports:
+      - "1080:1080" # Web UI
+      - "1025:1025" # SMTP server

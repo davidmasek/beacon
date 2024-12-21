@@ -31,8 +31,7 @@ beacon start
 ```sh
 # TODO: copy config (.sample.yaml -> .yaml ?)
 # TODO: use for testing
-docker build -t beacon .
-docker run --rm -p 8080:8080 -p 8089:8089 beacon start
+docker compose up --build
 ```
 
 ## 🌐 Website flow
