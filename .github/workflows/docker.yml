@@ -14,5 +14,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Prepare Staging Config
+      run: cp /root/beacon.yaml /root/beacon-staging.yaml
+
     - name: Build and test Docker image
+      env:
+        BEACON_EMAIL_SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+        BEACON_EMAIL_SMTP_PORT: ${{ secrets.SMTP_PORT }}
+        BEACON_EMAIL_SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+        BEACON_EMAIL_SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        BEACON_EMAIL_SEND_TO: ${{ secrets.SEND_TO }}
       run: ./test_docker.sh

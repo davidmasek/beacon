@@ -4,3 +4,8 @@
 .git
 .github
 Dockerfile
+tmp
+db/*.db
+bin
+report.html
+test_docker.sh
