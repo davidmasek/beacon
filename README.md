@@ -16,6 +16,8 @@ There are two main ways to use Beacon: website flow 🌐 and  heartbeat flow ❤
 
 ## 🚀 Quickstart
 
+Beacon can be easily installed anywhere [Go](https://go.dev/) is available.
+
 ```sh
 # install as executable
 go install github.com/davidmasek/beacon@latest
@@ -24,9 +26,46 @@ go install github.com/davidmasek/beacon@latest
 beacon start --config config.sample.yaml
 ```
 
+You can always check current status of your services on the web GUI, by default on [http://localhost:8089](localhost:8089).
+If you have SMTP configured, you will receive periodic reports via email.
+
+
+To monitor your project, send heartbeats periodically from your application:
+```sh
+# using Beacon CLI
+beacon heartbeat my-service-name
+
+# using HTTP API
+# curl as an example, use anything you want
+curl -X POST http://localhost:8088/beat/my-service-name
+```
+
+You can check status of your service(s), useful for programmatic access:
+```sh
+# using Beacon CLI
+beacon status my-service-name
+
+# using HTTP API
+# curl as an example, use anything you want
+curl http://localhost:8088/status/my-service-name
+
+# generate report for all your services
+beacon report
+# generate report and send it via email
+# (requires your SMTP server configuration)
+beacon report --send-mail
+```
+
+You can also check health of websites:
+```sh
+# usage: beacon check <service-id> <url>
+beacon check my-github https://github.com/davidmasek/beacon
+beacon status my-github
+```
+
 ### Docker
 
-`compose.yaml` is provided for convenience. Simply start it with:
+Beacon is available as a Docker container. `compose.yaml` is provided for convenience. Simply start it with:
 ```sh
 docker compose up
 ```
@@ -39,6 +78,11 @@ docker build -t beacon .
 docker run --rm -p 8080:8080 -p 8089:8089 -v $(pwd)/config.sample.yaml:/root/beacon.yaml:ro beacon start
 ```
 
+## Configuration
+
+Configuration can be provided with CLI flags, environment variables and config files.
+
+Details: WIP
 
 ## 🌐 Website flow
 
