@@ -48,7 +48,7 @@ You should start with the main [README](README.md).
     - done for heartbeat
     - want for web
     - maybe for reports in the future
-  - 🔴 end-to-end CLI test
+  - 🟡 end-to-end CLI test
     - with Docker
 
 
