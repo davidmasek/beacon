@@ -12,15 +12,24 @@ DOCKER_BUILDKIT=1 docker compose build beacon
 echo "Build successful."
 echo "-----------------"
 
+# try to read env file, but ignore it if it does not exist
+# in CI the env will be set without this file
+source ~/beacon.github.env || true
+
 docker compose run --rm \
  -T \
  --entrypoint bash \
  -v $(pwd)/config.yaml:/app/beacon-staging.yaml:ro \
+ -e BEACON_EMAIL_SMTP_SERVER \
+ -e BEACON_EMAIL_SMTP_PORT \
+ -e BEACON_EMAIL_SMTP_USERNAME \
+ -e BEACON_EMAIL_SMTP_PASSWORD \
+ -e BEACON_EMAIL_SEND_TO \
  -e BEACON_EMAIL_PREFIX='[staging]' \
  beacon -c '
 set -e
 /app/beacon start &
-curl -sS -X POST http://localhost:8088/beat/sly-fox
+curl --retry 3 -sS -X POST http://localhost:8088/beat/sly-fox
 curl -sS -X GET http://localhost:8088/status/sly-fox
 /app/beacon report --send-mail --config-file /app/beacon-staging.yaml
 '
