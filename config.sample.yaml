@@ -6,15 +6,11 @@ websites:
       content:
         - Beacon
 
-heartbeats:
-  heartbeat-listener:
-      timeout: 24h
-
 email:
-  smtp_server: mail.something.fake
+  smtp_server: mail.smtp2go.com
   smtp_port: 587
-  smtp_username: something.fake
-  smtp_password: f4ke
-  send_to: you@something.fake
-  sender: you@something.fake
-  prefix: "[dev-example]"
+  smtp_username: beacon
+  smtp_password:
+  send_to: you@example.fake
+  sender: noreply@example.fake
+  prefix: "[dev]"

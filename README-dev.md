@@ -11,19 +11,21 @@ You should start with the main [README](README.md).
   - 🟡 stable API
     - needs finalization on "heartbeat"-only endpoints
     - later: needs endpoints for HealthCheck
+    - /services/<id>/action might be good structure
 - 🟡 web GUI
   - currently displays the main information
   - ~~should also support management~~
     - management will currently be supported only by CLI
   - support auth
     - blocked by *user management*
+  - TODO: unify ports - run on same port as HB listener
 - 🟡 website monitor
   - needs more testing
   - needs periodic run solution
 - 🟡 heartbeat/website management
   - currently hardcoded, needs more dynamic approach
   - needs refactor
-  - TODO: 
+  - TODO
 - 🔴 user management
   - would enable multi-user server
   - would enable public server
@@ -31,8 +33,10 @@ You should start with the main [README](README.md).
   - need to decide on config form
   - needs documentation for config
   - nice-to-have: Dockerization
-- 🔴 notifications
-  - currently needs updates after refactors of other parts
+- 🟡 notifications
+  - email reporting
+  - local HTML report
+  - needs periodical monitoring
 - 🟡 dev workflow
   - 🟢 basic github setup
   - 🟢 CI for building/testing 

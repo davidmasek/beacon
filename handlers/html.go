@@ -9,6 +9,7 @@ import (
 
 // Write HTML Hearbeat report to `wr`
 func WriteReport(reports []ServiceReport, wr io.Writer) error {
+	// TODO: relies on relative path
 	t, err := template.ParseFiles("report.template.html")
 	if err != nil {
 		return err

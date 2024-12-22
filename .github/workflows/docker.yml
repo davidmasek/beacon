@@ -1,0 +1,25 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build and test Docker image
+      env:
+        BEACON_EMAIL_SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+        BEACON_EMAIL_SMTP_PORT: ${{ secrets.SMTP_PORT }}
+        BEACON_EMAIL_SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+        BEACON_EMAIL_SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        BEACON_EMAIL_SEND_TO: ${{ secrets.SEND_TO }}
+        BEACON_EMAIL_SENDER: ${{ secrets.SENDER }}
+      run: ./test_docker.sh

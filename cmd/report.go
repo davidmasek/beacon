@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/davidmasek/beacon/handlers"
@@ -24,18 +25,38 @@ var reportCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		configFile, err := cmd.Flags().GetString("config-file")
+		if err != nil {
+			return err
+		}
 
 		// TODO: look into how viper/cobra should be used together
-		viper := viper.New()
-		viper.AddConfigPath(".")
-		err = viper.ReadInConfig()
-		if err != nil {
-			return fmt.Errorf("fatal error reading config file: %w", err)
+		config := viper.New()
+		if configFile != "" {
+			config.SetConfigFile(configFile)
+		} else {
+			config.SetConfigName("beacon.yaml")
+			config.SetConfigType("yaml")
+			config.AddConfigPath(".")
+			config.AddConfigPath("$HOME/")
 		}
-		viper.Set("send-mail", sendMail)
-		viper.Set("report-name", reportName)
 
-		return report(viper)
+		config.SetEnvPrefix("BEACON")
+		// Bash doesn't allow dot in the environment variable name.
+		// Viper requires dot for nested variables.
+		// Use underscore and replace.
+		config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+		config.AutomaticEnv()
+
+		err = config.ReadInConfig()
+		if err != nil {
+			return fmt.Errorf("error reading config file %q: %w", config.ConfigFileUsed(), err)
+		}
+		log.Printf("Read config from %q", config.ConfigFileUsed())
+		config.Set("send-mail", sendMail)
+		config.Set("report-name", reportName)
+
+		return report(config)
 	},
 }
 

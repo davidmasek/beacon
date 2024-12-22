@@ -66,5 +66,6 @@ func init() {
 
 	startCmd.Flags().Int("port", 8088, "Port where the heartbeat server should run")
 	startCmd.Flags().Int("gui-port", 8089, "Port where the GUI server should run")
-	startCmd.Flags().Bool("stop", false, "The the server after starting")
+	startCmd.Flags().Bool("stop", false, "Stop the server after starting")
+	startCmd.Flags().Bool("background", false, "Run in the background")
 }

@@ -1,0 +1,10 @@
+services:
+  beacon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8088:8088" # heartbeat listener
+      - "8089:8089" # web GUI 
+    volumes:
+      - ./config.sample.yaml:/root/beacon.yaml # config file

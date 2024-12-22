@@ -26,7 +26,7 @@ func (sm SMTPMailer) Send(reports []ServiceReport, emailConfig *viper.Viper) err
 	emailConfig.SetDefault("prefix", "")
 	prefix := emailConfig.GetString("prefix")
 	// add whitespace after prefix if it exists and is not included already
-	if prefix != "" && strings.HasSuffix(prefix, " ") {
+	if prefix != "" && !strings.HasSuffix(prefix, " ") {
 		prefix = prefix + " "
 	}
 

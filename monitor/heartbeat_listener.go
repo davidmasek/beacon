@@ -61,7 +61,7 @@ func handleBeat(db storage.Storage) http.HandlerFunc {
 
 		// Respond to the client
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "%s @ %s", serviceID, nowStr)
+		fmt.Fprintf(w, "%s @ %s\n", serviceID, nowStr)
 	}
 }
 
@@ -82,13 +82,13 @@ func handleStatus(db storage.Storage) http.HandlerFunc {
 		}
 		if len(timestamps) == 0 {
 			w.WriteHeader(http.StatusOK)
-			fmt.Fprintf(w, "%s @ never", serviceID)
+			fmt.Fprintf(w, "%s @ never\n", serviceID)
 			return
 		}
 		timestamp := timestamps[0]
 
 		// Respond to the client
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "%s @ %s", serviceID, timestamp.UTC().Format(storage.TIME_FORMAT))
+		fmt.Fprintf(w, "%s @ %s\n", serviceID, timestamp.UTC().Format(storage.TIME_FORMAT))
 	}
 }
