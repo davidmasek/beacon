@@ -6,17 +6,5 @@ services:
     ports:
       - "8088:8088" # heartbeat listener
       - "8089:8089" # web GUI 
-    environment:
-      - SMTP_HOST=mailcatcher
-      - SMTP_PORT=1025
-    depends_on:
-      - mailcatcher
     volumes:
-      - ./config.sample.yaml:/root/beacon.yaml # Mount config file
-    command: start
-
-  mailcatcher:
-    image: schickling/mailcatcher
-    ports:
-      - "1080:1080" # Web UI
-      - "1025:1025" # SMTP server
+      - ./config.sample.yaml:/root/beacon.yaml # config file

@@ -11,6 +11,7 @@ You should start with the main [README](README.md).
   - 🟡 stable API
     - needs finalization on "heartbeat"-only endpoints
     - later: needs endpoints for HealthCheck
+    - /services/<id>/action might be good structure
 - 🟡 web GUI
   - currently displays the main information
   - ~~should also support management~~

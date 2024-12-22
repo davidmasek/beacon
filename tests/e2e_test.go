@@ -68,7 +68,7 @@ func TestEndToEndHeartbeat(t *testing.T) {
 	assert.Contains(t, html, service_name)
 }
 
-// TODO: could replace with http.Client ?
+// TODO: could replace with resty ?
 func Post(suffix string, t *testing.T, port string) string {
 	resp, err := http.Post(fmt.Sprintf("http://localhost:%s%s", port, suffix), "application/json", nil)
 	if err != nil {
@@ -99,7 +99,7 @@ func Post(suffix string, t *testing.T, port string) string {
 	return ""
 }
 
-// TODO: could replace with http.Client ?
+// TODO: could replace with resty ?
 func Get(suffix string, t *testing.T, port string) string {
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%s%s", port, suffix))
 	if err != nil {

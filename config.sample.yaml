@@ -11,8 +11,8 @@ heartbeats:
       timeout: 24h
 
 email:
-  smtp_server: mailcatcher
-  smtp_port: 1025
+  smtp_server: mail.smtp2go.com
+  smtp_port: 587
   smtp_username: beacon
   smtp_password:
   send_to: beacon@optimisticotter.com
