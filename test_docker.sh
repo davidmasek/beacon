@@ -15,14 +15,14 @@ echo "-----------------"
 docker compose run --rm \
  -T \
  --entrypoint bash \
- -v $(pwd)/config.yaml:/root/beacon-staging.yaml:ro \
+ -v $(pwd)/config.yaml:/app/beacon-staging.yaml:ro \
  -e BEACON_EMAIL_PREFIX='[staging]' \
  beacon -c '
 set -e
 /app/beacon start &
 curl -sS -X POST http://localhost:8088/beat/sly-fox
 curl -sS -X GET http://localhost:8088/status/sly-fox
-/app/beacon report --send-mail --config-file /root/beacon-staging.yaml
+/app/beacon report --send-mail --config-file /app/beacon-staging.yaml
 '
 
 TEST_RESULT=$?

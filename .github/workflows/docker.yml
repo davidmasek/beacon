@@ -15,7 +15,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Prepare Staging Config
-      run: cp /root/beacon.yaml /root/beacon-staging.yaml
+      run: cp ./config.sample.yaml ./beacon-staging.yaml
 
     - name: Build and test Docker image
       env:
