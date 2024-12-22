@@ -36,7 +36,7 @@ For production usage you should mount your config file instead of `config.sample
 You can also use docker directly without compose:
 ```sh
 docker build -t beacon .
-docker run --rm -p 8080:8080 -p 8089:8089 beacon start
+docker run --rm -p 8080:8080 -p 8089:8089 -v $(pwd)/config.sample.yaml:/root/beacon.yaml:ro beacon start
 ```
 
 
