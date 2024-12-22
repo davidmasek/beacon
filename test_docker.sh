@@ -19,7 +19,6 @@ source ~/beacon.github.env || true
 docker compose run --rm \
  -T \
  --entrypoint bash \
- -v $(pwd)/config.yaml:/app/beacon-staging.yaml:ro \
  -e BEACON_EMAIL_SMTP_SERVER \
  -e BEACON_EMAIL_SMTP_PORT \
  -e BEACON_EMAIL_SMTP_USERNAME \
