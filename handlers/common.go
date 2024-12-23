@@ -11,7 +11,7 @@ import (
 
 type ServiceReport struct {
 	ServiceId         string
-	ServiceStatus     monitor.ServiceState
+	ServiceStatus     monitor.ServiceStatus
 	LatestHealthCheck *storage.HealthCheck
 }
 

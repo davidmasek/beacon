@@ -1,10 +1,19 @@
-websites:
+services:
   beacon-github:
-      url: "https://github.com/davidmasek/beacon"
-      status:
-        - 200
-      content:
-        - Beacon
+    url: "https://github.com/davidmasek/beacon"
+    status:
+      - 200
+    content:
+      - Beacon
+  beacon-periodic-checker:
+  example-with-extras:
+    timeout: 48h
+  example-basic-web:
+    url: "https://httpbin.org/get"
+  example-temp-disable:
+    url: "will-not-be-used-because-disabled"
+    enabled: false
+
 
 email:
   smtp_server: mail.smtp2go.com

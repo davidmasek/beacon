@@ -30,7 +30,7 @@ func handleIndex(db storage.Storage) http.HandlerFunc {
 			// Needed as HealthCheck can be nil
 			ServiceId         string
 			LatestHealthCheck *storage.HealthCheck
-			CurrentStatus     monitor.ServiceState
+			CurrentStatus     monitor.ServiceStatus
 		}
 		var services []ServiceStatus
 		serviceChecker := DefaultServiceChecker()
