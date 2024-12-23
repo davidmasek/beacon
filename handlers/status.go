@@ -21,7 +21,7 @@ func DefaultServiceChecker() ServiceChecker {
 // Compute service status based on latest HealthCheck
 //
 // TODO: maybe should be used like HealthCheck.GetStatus(config) or smth
-func (config *ServiceChecker) GetServiceStatus(latestHealthCheck *storage.HealthCheck) (monitor.ServiceState, error) {
+func (config *ServiceChecker) GetServiceStatus(latestHealthCheck *storage.HealthCheck) (monitor.ServiceStatus, error) {
 	if latestHealthCheck == nil {
 		log.Println("[GetServiceStatus] no health check found")
 		return monitor.STATUS_FAIL, nil

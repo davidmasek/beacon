@@ -44,7 +44,7 @@ var testServicesInput = []storage.HealthCheckInput{
 	},
 }
 
-func expectedStateFromName(t *testing.T, name string) monitor.ServiceState {
+func expectedStatusFromName(t *testing.T, name string) monitor.ServiceStatus {
 	if strings.HasSuffix(name, "should-pass") {
 		return monitor.STATUS_OK
 	}
@@ -85,7 +85,7 @@ func TestWriteReport(t *testing.T) {
 		require.GreaterOrEqualf(t, idx, 0, "Service %s not found in reports", serviceId)
 
 		reported := reports[idx].ServiceStatus
-		expected := expectedStateFromName(t, serviceId)
+		expected := expectedStatusFromName(t, serviceId)
 		assert.Equal(t, expected, reported)
 	}
 }

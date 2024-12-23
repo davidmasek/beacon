@@ -14,11 +14,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-type WebPinger struct {
-}
-
-// Verify that HeartbeatListener implements Monitor interface
-var _ Monitor = (*WebPinger)(nil)
+type WebPinger struct{}
 
 type WebConfig struct {
 	Url         string   `mapstructure:"url"`
@@ -65,10 +61,10 @@ func CheckWebsites(db storage.Storage, websites map[string]WebConfig) error {
 
 }
 
-func (config *WebConfig) GetServiceStatus() (ServiceState, error) {
+func (config *WebConfig) GetServiceStatus() (ServiceStatus, error) {
 	// TODO: we need to split this into two functions
 	// - "get status from website to DB"
-	// - "get ServiceState based on info from DB"
+	// - "get ServiceStatus based on info from DB"
 	resp, err := http.Get(config.Url)
 	if err != nil {
 		return STATUS_FAIL, err

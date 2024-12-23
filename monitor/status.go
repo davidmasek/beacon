@@ -1,10 +1,10 @@
 package monitor
 
-type ServiceState string
+type ServiceStatus string
 
 const (
-	STATUS_OK ServiceState = "OK"
+	STATUS_OK   ServiceStatus = "OK"
+	STATUS_FAIL ServiceStatus = "FAIL"
 	// e.g. unable to decide, not enough data, error in the check
-	STATUS_OTHER ServiceState = "OTHER"
-	STATUS_FAIL  ServiceState = "FAIL"
+	STATUS_OTHER ServiceStatus = "OTHER"
 )
