@@ -21,18 +21,19 @@ You should start with the main [README](README.md).
   - TODO: unify ports - run on same port as HB listener
 - 🟡 website monitor
   - needs more testing
-  - needs periodic run solution
 - 🟡 heartbeat/website management
   - currently hardcoded, needs more dynamic approach
   - needs refactor
   - TODO
+- 🔴 periodic website checking
+  - this is the main missing feature currently
 - 🔴 user management
   - would enable multi-user server
   - would enable public server
-- 🔴 friendly app configuration
-  - need to decide on config form
-  - needs documentation for config
-  - nice-to-have: Dockerization
+- 🟡 friendly app configuration
+  - config format done
+  - documentation done
+  - needs some user-testing to make sure it makes sense
 - 🟡 notifications
   - email reporting
   - local HTML report

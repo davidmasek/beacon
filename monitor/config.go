@@ -32,6 +32,14 @@ func setupConfig(config *viper.Viper) (*viper.Viper, error) {
 	// Viper requires dot for nested variables.
 	// Use underscore and replace.
 	config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	// The combination of the prefix + string replacer
+	// means that to overwrite config `email.smtp_port`, i.e.
+	// ```yaml
+	// email:
+	//   smtp_port: 587
+	// ```
+	// you should use BEACON_EMAIL_SMTP_PORT key, e.g.
+	// BEACON_EMAIL_SMTP_PORT=123
 	config.AutomaticEnv()
 
 	err := config.ReadInConfig()
