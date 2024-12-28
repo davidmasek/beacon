@@ -72,7 +72,10 @@ func setupConfig(config *viper.Viper) (*viper.Viper, error) {
 	keysArr := config.AllKeys()
 	keySet := make(map[string]struct{})
 	for _, k := range keysArr {
-		keySet[k] = struct{}{}
+		// ignore sub-keys
+		if !strings.Contains(k, ".") {
+			keySet[k] = struct{}{}
+		}
 	}
 	expectedKeys := []string{
 		"services",

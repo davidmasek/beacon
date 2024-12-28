@@ -53,7 +53,7 @@ var startCmd = &cobra.Command{
 			// TODO: quick fix to enable start when no config file specified
 			// should either decide to always require config file (and provide a reasonable default)
 			// or handle this like normal behavior (i.e. not just hack it here)
-			if strings.Contains(err.Error(), `Config File "beacon.yaml" Not Found in`) {
+			if err != nil && strings.Contains(err.Error(), `Config File "beacon.yaml" Not Found in`) {
 				log.Println(err)
 				cmd.Println("No config file found")
 				err = nil
