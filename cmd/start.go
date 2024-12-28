@@ -1,10 +1,15 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"log"
+	"strings"
+	"time"
 
 	"github.com/davidmasek/beacon/handlers"
 	"github.com/davidmasek/beacon/monitor"
+	"github.com/davidmasek/beacon/scheduler"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -36,7 +41,30 @@ var startCmd = &cobra.Command{
 		defer db.Close()
 
 		heartbeatListener := monitor.HeartbeatListener{}
-		config := viper.New()
+		// TODO: need to unify config loading in CLI at least a bit
+		configFile, err := cmd.Flags().GetString("config-file")
+		if err != nil {
+			return err
+		}
+
+		var config *viper.Viper
+		if configFile == "" {
+			config, err = monitor.DefaultConfig()
+			// TODO: quick fix to enable start when no config file specified
+			// should either decide to always require config file (and provide a reasonable default)
+			// or handle this like normal behavior (i.e. not just hack it here)
+			if strings.Contains(err.Error(), `Config File "beacon.yaml" Not Found in`) {
+				log.Println(err)
+				cmd.Println("No config file found")
+				err = nil
+			}
+		} else {
+			config, err = monitor.DefaultConfigFrom(configFile)
+		}
+		if err != nil {
+			return err
+		}
+
 		config.Set("port", port)
 		heartbeatServer, err := heartbeatListener.Start(db, config)
 		if err != nil {
@@ -48,15 +76,22 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
+		ctx, cancelScheduler := context.WithCancel(context.Background())
+		// TODO: load interval from somewhere
+		go scheduler.Start(ctx, 1*time.Hour, db, config)
+
 		if stopServer {
 			uiServer.Close()
 			heartbeatServer.Close()
+			cancelScheduler()
 			cmd.Println(SERVER_SUCCESS_MESSAGE)
 			return nil
 		}
 
 		exit := make(chan struct{})
 		<-exit
+		// not really needed, but linters complain otherwise
+		cancelScheduler()
 		return nil
 	},
 }

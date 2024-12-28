@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"testing"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -25,6 +26,10 @@ type HealthCheck struct {
 	Metadata  map[string]string
 }
 
+type User struct {
+	email string
+}
+
 type Storage interface {
 	Close() error
 	// List all distinct services
@@ -39,16 +44,56 @@ type Storage interface {
 	RecordHeartbeat(serviceID string, timestamp time.Time) (string, error)
 	// Return sorted list of timestamps or error
 	GetLatestHeartbeats(serviceID string, limit int) ([]time.Time, error)
+	CreateUser(email string, password string) error
+	ValidateUser(email string, password string) (*User, error)
 }
 
 // https://www.sqlite.org/lang_select.html#limitoffset
 const NO_LIMIT int = -1
 const TIME_FORMAT = time.RFC3339
 
-var ErrServiceNotFound = errors.New("Storage: service not found")
+var ErrEmailAlreadyUsed = errors.New("email already used")
+
+func NewTestDb(t *testing.T) Storage {
+	db, err := NewSQLStorage(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return db
+}
 
 type SQLStorage struct {
 	db *sql.DB
+}
+
+func (s *SQLStorage) CreateUser(email string, password string) error {
+	hashedPassword, err := GenerateFromPassword(password)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Exec("INSERT INTO users (email, password_hash) VALUES (?, ?)",
+		email,
+		hashedPassword,
+	)
+	return err
+}
+
+func (s *SQLStorage) ValidateUser(email string, password string) (*User, error) {
+	query := `SELECT password_hash FROM users WHERE email = ?`
+
+	// QueryRow is used because we expect at most one result
+	row := s.db.QueryRow(query, email)
+
+	var passwordHash string
+	err := row.Scan(&passwordHash)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// no user found
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &User{email: email}, nil
 }
 
 // List all distinct services, sorted alphabetically
@@ -201,10 +246,21 @@ func NewSQLStorage(path string) (*SQLStorage, error) {
 	query := `
 	CREATE TABLE IF NOT EXISTS health_checks (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER,
 		service_id TEXT NOT NULL,
 		timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-		metadata TEXT
-	);`
+		metadata TEXT,
+		FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+	);
+	
+	CREATE TABLE IF NOT EXISTS users (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		email TEXT UNIQUE NOT NULL,
+		password_hash TEXT NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
+	`
 	_, err = db.Exec(query)
 	if err != nil {
 		return nil, err

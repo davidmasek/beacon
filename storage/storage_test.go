@@ -12,15 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Prepare test DB
-func setupDB(t *testing.T) Storage {
-	db, err := NewSQLStorage(":memory:")
-	if err != nil {
-		t.Fatal(err)
-	}
-	return db
-}
-
 // DB location is settable via env variable
 func TestDbPath(t *testing.T) {
 	dir, err := os.MkdirTemp("", "test-beacon")
@@ -54,7 +45,7 @@ func setupTimestamps(t *testing.T) []time.Time {
 
 // Basic happy path - store and get a single timestamp
 func TestStoreGet(t *testing.T) {
-	db := setupDB(t)
+	db := NewTestDb(t)
 	defer db.Close()
 
 	want := "2024-10-26T11:59:51Z"
@@ -88,7 +79,7 @@ func TestStoreGet(t *testing.T) {
 
 // Test get on empty DB
 func TestGetEmpty(t *testing.T) {
-	db := setupDB(t)
+	db := NewTestDb(t)
 	defer db.Close()
 
 	serviceID := "test-service"
@@ -103,7 +94,7 @@ func TestGetEmpty(t *testing.T) {
 
 // Test storing multiple timestamps and getting them back
 func TestStoreGetMultiple(t *testing.T) {
-	db := setupDB(t)
+	db := NewTestDb(t)
 	defer db.Close()
 
 	serviceID := "test-service"
@@ -138,7 +129,7 @@ func TestStoreGetMultiple(t *testing.T) {
 
 // Test that the timestamps are returned in the correct order (newest first)
 func TestLatestHearbeatsOrder(t *testing.T) {
-	db := setupDB(t)
+	db := NewTestDb(t)
 	defer db.Close()
 
 	serviceID := "test-service"
@@ -197,7 +188,7 @@ func testAddAndRetrieveEvent(t *testing.T, db Storage, event *HealthCheckInput) 
 }
 
 func TestEvents(t *testing.T) {
-	db := setupDB(t)
+	db := NewTestDb(t)
 	defer db.Close()
 	now := time.Now().UTC()
 	serviceId := "test-service"
@@ -233,7 +224,7 @@ func TestEvents(t *testing.T) {
 // HealthCheck.Metadata should never be nil
 // The goal is to simplify code and skip `.Metadata != nil` checks everywhere
 func TestHealthCheckMetadataAlwaysPresent(t *testing.T) {
-	db := setupDB(t)
+	db := NewTestDb(t)
 	defer db.Close()
 	input := HealthCheckInput{
 		ServiceId: "foo",

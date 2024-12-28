@@ -22,9 +22,9 @@ type WebConfig struct {
 	BodyContent []string `mapstructure:"content"`
 }
 
-func (*WebPinger) Start(db storage.Storage, viper *viper.Viper) error {
+func (*WebPinger) Start(db storage.Storage, config *viper.Viper) error {
 	websites := make(map[string]WebConfig)
-	err := viper.UnmarshalKey("websites", &websites)
+	err := config.UnmarshalKey("websites", &websites)
 	if err != nil {
 		return fmt.Errorf("fatal error unmarshaling config file: %w", err)
 	}
@@ -74,6 +74,7 @@ func (config *WebConfig) GetServiceStatus() (ServiceStatus, error) {
 	codeOk := slices.Contains(config.HttpStatus, resp.StatusCode)
 	if !codeOk {
 		log.Printf("Expected status code %v, got %v", config.HttpStatus, resp.StatusCode)
+		return STATUS_FAIL, err
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
