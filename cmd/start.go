@@ -3,15 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
-	"strings"
 
 	"github.com/davidmasek/beacon/handlers"
-	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/scheduler"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var SERVER_SUCCESS_MESSAGE = "[SUCCESS] Startup complete. Stopping."
@@ -35,26 +31,7 @@ var startCmd = &cobra.Command{
 		}
 		defer db.Close()
 
-		// TODO: need to unify config loading in CLI at least a bit
-		configFile, err := cmd.Flags().GetString("config")
-		if err != nil {
-			return err
-		}
-
-		var config *viper.Viper
-		if configFile == "" {
-			config, err = monitor.DefaultConfig()
-			// TODO: quick fix to enable start when no config file specified
-			// should either decide to always require config file (and provide a reasonable default)
-			// or handle this like normal behavior (i.e. not just hack it here)
-			if err != nil && strings.Contains(err.Error(), `Config File "beacon.yaml" Not Found in`) {
-				log.Println(err)
-				cmd.Println("No config file found")
-				err = nil
-			}
-		} else {
-			config, err = monitor.DefaultConfigFrom(configFile)
-		}
+		config, err := loadConfig(cmd)
 		if err != nil {
 			return err
 		}

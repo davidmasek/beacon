@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/davidmasek/beacon/storage"
 	"github.com/spf13/cobra"
 )
@@ -23,7 +21,7 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		for _, service := range services {
-			fmt.Println(service)
+			cmd.Println(service)
 		}
 		return nil
 	},

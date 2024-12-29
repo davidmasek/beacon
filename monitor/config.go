@@ -13,18 +13,19 @@ import (
 )
 
 // Setup default configuration.
-// Tries to find config file automatically (home dir, current dir).
+// Tries to find config file automatically in home dir.
 func DefaultConfig() (*viper.Viper, error) {
 	config := viper.New()
 	config.SetConfigName("beacon.yaml")
 	config.SetConfigType("yaml")
-	config.AddConfigPath(".")
+	// todo: is this portable?
 	config.AddConfigPath("$HOME/")
 	return setupConfig(config)
 }
 
 // Load config from "config.sample.yaml". Useful for testing.
 func ExampleConfig() (*viper.Viper, error) {
+	// test can be run with different working dir
 	locations := []string{
 		filepath.Join("config.sample.yaml"),
 		filepath.Join("..", "config.sample.yaml"),
