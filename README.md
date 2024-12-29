@@ -73,39 +73,12 @@ docker run --rm -p 8080:8080 -v $(pwd)/config.sample.yaml:/root/beacon.yaml:ro b
 
 ## Configuration
 
-Configuration can be provided with CLI flags, environment variables and config file. See [config.sample.yaml](config.sample.yaml) for example of a config file.
+Configuration can be provided with CLI flags, environment variables and a config file. See [config.sample.yaml](config.sample.yaml) for example of a config file. By default the config file will be named `beacon.yaml` and located in your home directory (`~/beacon.yaml`). You can specify config file path with the `--config` CLI flag available for all commands.
 
-**No configuration is required** for Beacon to run. You can start without any configuration file and add it later once you need it. Some functionality
-might need configuration.
-
-By default Beacon searches for config file named `beacon.yaml` inside current directory and home directory. You can specify config file path with the `--config` CLI flag available for all commands.
+If no config file is found in the default location (and you don't specify it yourself) then a default config file will be created. You can modify
+the config file later as needed.
 
 CLI flags take precedence over environment variables, which take precedence over config file. Environment variables should start with prefix `BEACON_` and use underscores for hierarchy. For example, to overwrite value for `smtp_port` under `email` section you would set `BEACON_SMTP_PORT` env variable. Anything specified inside config file can be overwritten using env variables.
-
-### Using Beacon Without Config File
-
-TODO: revise. Currently thinking if config file would be needed - in that case a default one will be provided.
-
-We don't need no configuration. You can add configuration file later when you need it.
-
-You can simply send a heartbeat for any service and Beacon will start tracking its health and include it in reports.
-
-If you "check" a website with Beacon it will start tracking it and include it in reports. However it will not be automatically checked. Include
-the service in your config file if you want automatic checks.
-
-```sh
-# will start reporting "my-service-name" status even if not explicitly
-# listed in config file
-curl -X POST http://localhost:8088/beat/my-service-name
-
-# will include the service in reports, but will not periodically check it on its own
-beacon check my-github https://github.com/davidmasek/beacon
-```
-
-If you don't like this behavior and want to limit Beacon only to services defined in config file it will be possible in the future (TODO - implementation planned).
-
-Email features will not work without SMTP configuration. If you don't want to use config file you can provide all the required settings with environment variables. 
-
 
 ### Service configuration
 
@@ -126,9 +99,9 @@ services:
   truly-minimal-config:
 ```
 
-The field `timeout` determines how long to consider a service healthy after a successful health check. It defaults to `24h` and needs to be specified with the unit included (`6h`, `24h`, `48h`, ...). For example, if a service has a timeout of 24 hours, it will be considered failed if it does not receive heartbeat for 24 hours.
+The option `timeout` determines how long to consider a service healthy after a successful health check. It defaults to `24h` and needs to be specified with the unit included (`6h`, `24h`, `48h`, ...). For example, if a service has a timeout of 24 hours, it will be considered failed if it does not receive heartbeat for 24 hours.
 
-`timeout` does not override health checks. For example if your website responds with unexpected status code (e.g. 404, 5xx, depending on settings) it will be immediately considered failed even if the `timeout` period did not end.
+`timeout` does not override health checks. For example if your website responds with unexpected status code (e.g. 404, 5xx, depending on settings) it will be immediately considered failed even if the `timeout` period did not pass yet.
 
 The following fields are currently relevant only to web services:
 - `url` - url to be periodically checked to determine service health
@@ -150,8 +123,6 @@ The section `email` has the following fields:
 - `send_to` - your address where mail should be sent to
 - `sender` - email address marked as sender of the emails
 - `prefix` - any string, will be placed at start of the subject of each email. Useful to quickly differentiate different environments (I use it to separate dev/staging/prod).
-
-
 
 ## 🌐 Website flow
 
