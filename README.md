@@ -124,6 +124,26 @@ The section `email` has the following fields:
 - `sender` - email address marked as sender of the emails
 - `prefix` - any string, will be placed at start of the subject of each email. Useful to quickly differentiate different environments (I use it to separate dev/staging/prod).
 
+## API
+
+Beacon provides HTTP API to send and retrieve information about services.
+
+Available endpoints:
+
+|        Endpoint              |          Description          |
+|------------------------------|-------------------------------|
+| POST `/services/<id>/beat`   |  send heartbeat for service   | 
+| GET  `/services/<id>/status` |  get latest health check      |
+
+
+Examples:
+```sh
+❯ curl -X POST http://localhost:8088/services/sly-fox/beat
+sly-fox @ 2024-12-29T18:55:11Z
+❯ curl -X GET http://localhost:8088/services/sly-fox/status
+sly-fox @ 2024-12-29T18:55:11Z
+```
+
 ## 🌐 Website flow
 
 You have a website. You point Beacon to it. Beacon continually checks that it is online. If it's not running you get a notification. 

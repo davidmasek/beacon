@@ -8,9 +8,10 @@ You should start with the main [README](README.md).
 - 🟢 heartbeat listener
   - 🟢 HTTP server
   - 🟢 persistence
-  - 🟢 stable API
+  - 🟡 stable API
     - 🟢 needs finalization on "heartbeat"-only endpoints
-    - 🟡 later: needs endpoints for HealthCheck
+    - 🔴 stabilize response - use JSON
+    - 🟤 later: needs endpoints for HealthCheck
     - 🟢 go with `/services/<id>/action` structure
 - 🟢 web GUI
   - 🟢 display the main information
@@ -24,7 +25,7 @@ You should start with the main [README](README.md).
   - 🟢 specified in config
   - 🟡 some support for "manual" services without config - for heartbeats only
     - up to debate if these should be kept
-  - 🔴 delete old/unused service
+  - 🟤 delete old/unused service
 - 🟡 periodic website checking
   - 🟢 basic version done
   - 🟢 should decouple "web scraping" and reporting
@@ -34,7 +35,7 @@ You should start with the main [README](README.md).
   - would enable multi-user server
   - would enable public server
   - 🔴 auth
-- 🔴 friendly app configuration
+- 🔴 friendly app configuration / documentation
   - 🔴 TODO: DB needs some documentation
   - 🟡 TODO: relative file paths need some handling
   - 🟡 some "test my config file" functionality would be nice
@@ -44,6 +45,7 @@ You should start with the main [README](README.md).
   - 🟢 config format done
   - 🟢 main documentation done
   - 🟡 needs some user-testing to make sure it makes sense
+  - 🟤 later: swagger API docs?
 - 🟢 notifications
   - 🟢 email reporting
   - 🟢 local HTML report
