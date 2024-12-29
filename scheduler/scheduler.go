@@ -2,10 +2,7 @@ package scheduler
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/davidmasek/beacon/handlers"
@@ -105,49 +102,6 @@ func ShouldReport(db storage.Storage, config *viper.Viper, query time.Time) (boo
 	return true, nil
 }
 
-func Report(db storage.Storage, config *viper.Viper, now time.Time) error {
-	// TODO: unify with the CLI report functionality
-	reports, err := handlers.GenerateReport(db)
-	if err != nil {
-		return err
-	}
-
-	config.SetDefault("report-name", "report")
-	filename := config.GetString("report-name")
-
-	if !strings.HasSuffix(filename, ".html") {
-		filename = fmt.Sprintf("%s.html", filename)
-	}
-
-	// proceed to send email even if writing to file fails
-	// as it is better if at least one of the two succeeds
-	err = handlers.WriteReportToFile(reports, filename)
-
-	// TODO: need better way so check if should send email
-	sendEmail := config.IsSet("email.smtp_password")
-	if sendEmail {
-		var emailErr error
-		server, emailErr := handlers.LoadServer(config.Sub("email"))
-		if emailErr != nil {
-			emailErr := fmt.Errorf("failed to load SMTP server: %w", err)
-			err = errors.Join(err, emailErr)
-			return err
-		}
-		mailer := handlers.SMTPMailer{
-			Server: server,
-		}
-		emailErr = mailer.Send(reports, config.Sub("email"))
-		err = errors.Join(err, emailErr)
-	}
-
-	status := "OK"
-	if err != nil {
-		status = err.Error()
-	}
-	dbErr := db.CreateTaskLog("report", status, now)
-	return errors.Join(err, dbErr)
-}
-
 func RunSingle(db storage.Storage, config *viper.Viper, now time.Time) error {
 	log.Println("Do scheduling work")
 
@@ -170,7 +124,7 @@ func RunSingle(db storage.Storage, config *viper.Viper, now time.Time) error {
 	}
 	if doReport {
 		log.Println("Reporting...")
-		err = Report(db, config, now)
+		err = handlers.DoReportTask(db, config, now)
 	}
 	return err
 }

@@ -21,6 +21,9 @@ You should start with the main [README](README.md).
   - 🟢 unify ports - run on same port as HB listener
 - 🟡 website monitor
   - needs more testing
+- 🟡 reports
+  - 🟢 basic flow
+  - 🔴 should take config file into account (currently only looks at DB)
 - 🟡 heartbeat/website management
   - 🟢 specified in config
   - 🟡 some support for "manual" services without config - for heartbeats only
