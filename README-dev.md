@@ -8,29 +8,32 @@ You should start with the main [README](README.md).
 - 🟢 heartbeat listener
   - 🟢 HTTP server
   - 🟢 persistence
-  - 🟡 stable API
-    - needs finalization on "heartbeat"-only endpoints
-    - later: needs endpoints for HealthCheck
-    - /services/<id>/action might be good structure
-- 🟡 web GUI
+  - 🟢 stable API
+    - 🟢 needs finalization on "heartbeat"-only endpoints
+    - 🟡 later: needs endpoints for HealthCheck
+    - 🟢 go with `/services/<id>/action` structure
+- 🟢 web GUI
   - 🟢 display the main information
   - ~~should also support management~~
     - management will currently be supported only by CLI
-  - support auth
+  - 🟡 support auth
   - 🟢 unify ports - run on same port as HB listener
 - 🟡 website monitor
   - needs more testing
 - 🟡 heartbeat/website management
-  - mostly specified in config
-  - some support for "manual" services without config (requires more API/CLI usage)
-  - TODO: delete old/unused service
+  - 🟢 specified in config
+  - 🟡 some support for "manual" services without config - for heartbeats only
+    - up to debate if these should be kept
+  - 🔴 delete old/unused service
 - 🟡 periodic website checking
   - 🟢 basic version done
-  - should decouple "web scraping" and reporting
+  - 🟢 should decouple "web scraping" and reporting
+  - requires more work to be nice
 - 🟡 user management
   - 🟢 DB prepared
   - would enable multi-user server
   - would enable public server
+  - 🔴 auth
 - 🔴 friendly app configuration
   - 🔴 TODO: DB needs some documentation
   - 🟡 TODO: relative file paths need some handling
@@ -38,13 +41,13 @@ You should start with the main [README](README.md).
   - 🔴 config file refactor
     - 🔴 config file should be required, but provided by default (inside homedir?)
     - 🔴 some utilities could be provided to check it / update it
-  - config format done
-  - documentation done
-  - needs some user-testing to make sure it makes sense
-- 🟡 notifications
-  - email reporting
-  - local HTML report
-  - needs periodical monitoring
+  - 🟢 config format done
+  - 🟢 main documentation done
+  - 🟡 needs some user-testing to make sure it makes sense
+- 🟢 notifications
+  - 🟢 email reporting
+  - 🟢 local HTML report
+  - 🟢 periodical monitoring
 - 🟡 dev workflow
   - 🟢 basic github setup
   - 🟢 CI for building/testing 

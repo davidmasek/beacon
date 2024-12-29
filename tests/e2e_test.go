@@ -44,12 +44,12 @@ func TestEndToEndHeartbeat(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	t.Log("Record heartbeat")
-	input := Post(fmt.Sprintf("/beat/%s", service_name), t, serverPort)
+	input := Post(fmt.Sprintf("/services/%s/beat", service_name), t, serverPort)
 	assert.Contains(t, input, service_name)
 	timestampIn := strings.Split(input, " ")[2]
 
 	t.Log("Retrieve heartbeat status")
-	output := Get(fmt.Sprintf("/status/%s", service_name), t, serverPort)
+	output := Get(fmt.Sprintf("/services/%s/status", service_name), t, serverPort)
 	assert.Contains(t, output, service_name)
 	timestampOut := strings.Split(output, " ")[2]
 	assert.Equal(t, timestampIn, timestampOut)

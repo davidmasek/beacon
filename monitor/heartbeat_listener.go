@@ -12,11 +12,10 @@ import (
 )
 
 func RegisterHeartbeatHandlers(db storage.Storage, mux *http.ServeMux) {
-	mux.HandleFunc("/beat/{service_id}", handleBeat(db))
-	mux.HandleFunc("/status/{service_id}", handleStatus(db))
+	mux.HandleFunc("/services/{service_id}/beat", handleBeat(db))
+	mux.HandleFunc("/services/{service_id}/status", handleStatus(db))
 }
 
-// Handler for /beat/{service_id}
 func handleBeat(db storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		serviceID := r.PathValue("service_id")

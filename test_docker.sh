@@ -30,9 +30,9 @@ docker compose run --rm \
 set -e
 /app/beacon start &
 echo "executing POST"
-curl --retry 3 --retry-connrefused -sS -X POST http://localhost:8088/beat/sly-fox
+curl --retry 3 --retry-connrefused -sS -X POST http://localhost:8088/services/sly-fox/beat
 echo "executing GET"
-curl -sS -X GET http://localhost:8088/status/sly-fox
+curl -sS -X GET http://localhost:8088/services/sly-fox/status
 /app/beacon report --send-mail
 '
 
