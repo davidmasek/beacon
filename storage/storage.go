@@ -5,11 +5,12 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/spf13/viper"
 )
 
 //go:embed create.sql
@@ -302,14 +303,33 @@ func NewSQLStorage(path string) (*SQLStorage, error) {
 	return &SQLStorage{db}, nil
 }
 
-// Database setup (SQLite in this case)
-func InitDB() (Storage, error) {
-	// TODO: probably should pass this better
-	config := viper.New()
-	config.SetEnvPrefix("BEACON")
-	config.BindEnv("DB")
-	config.SetDefault("DB", "./db/heartbeats.db")
-	dbPath := config.GetString("DB")
+// Database setup (SQLite in this case).
+//
+// Pass empty dbPath for default location.
+// If BEACON_DB is set that will be used.
+// Otherwise homedir/beacon.db is used.
+func InitDB(dbPath string) (Storage, error) {
+	// If not specified try loading from env variable.
+	// Always falling back to env var makes the path
+	// rewritable independent on how config is loaded.
+	// ---
+	// Alternatively we could pass config as usual with *viper.Viper
+	// but if that would not be set to read from env variables
+	// (due to an error) than we could modify the wrong database.
+	// Due to high impact of a potential mistake we use
+	// the somewhat non-systematic behavior of directly accessing
+	// env here instead of using Viper.
+	if dbPath == "" {
+		dbPath = os.Getenv("BEACON_DB")
+	}
+	// if still not specified use homedir/beacon.db
+	if dbPath == "" {
+		homedir, err := os.UserHomeDir()
+		if err != nil {
+			return nil, err
+		}
+		dbPath = filepath.Join(homedir, "beacon.db")
+	}
 	db, err := NewSQLStorage(dbPath)
 	if err != nil {
 		return nil, err

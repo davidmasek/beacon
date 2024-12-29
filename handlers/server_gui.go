@@ -1,18 +1,19 @@
 package handlers
 
 import (
-	"errors"
+	"embed"
 	"html/template"
-	"io/fs"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 	"sort"
 
 	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
 )
+
+//go:embed templates/*
+var TEMPLATES embed.FS
 
 // Show services status
 func handleIndex(db storage.Storage) http.HandlerFunc {
@@ -77,15 +78,8 @@ func handleIndex(db storage.Storage) http.HandlerFunc {
 		}
 
 		tmpl := template.New("index.html").Funcs(funcMap)
-		cwd, _ := os.Getwd()
-		path := filepath.Join(cwd, "templates", "index.html")
-		// workaround for tests than need different relative path
-		// better fix wanted
-		_, err = os.Stat(path)
-		if errors.Is(err, fs.ErrNotExist) {
-			path = filepath.Join(cwd, "..", "templates", "index.html")
-		}
-		tmpl, err = tmpl.ParseFiles(path)
+		path := filepath.Join("templates", "index.html")
+		tmpl, err = tmpl.ParseFS(TEMPLATES, path)
 		if err != nil {
 			log.Printf("Error parsing template: %v", err)
 			http.Error(w, "Failed to render page", http.StatusInternalServerError)

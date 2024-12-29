@@ -60,6 +60,7 @@ beacon report --send-mail
 
 Beacon is available as a Docker container. `compose.yaml` is provided for convenience. Simply start it with:
 ```sh
+# for persistent database you need to mount it inside `compose.yaml`
 docker compose up
 ```
 
@@ -68,7 +69,8 @@ For production usage you should mount your config file instead of `config.sample
 You can also use docker directly without compose:
 ```sh
 docker build -t beacon .
-docker run --rm -p 8080:8080 -v $(pwd)/config.sample.yaml:/root/beacon.yaml:ro beacon start
+# add `-v $(pwd)/beacon.db:/root/beacon.db` if you want persist database
+docker run --rm -p 8080:8080 -v $(pwd)/config.sample.yaml:/root/beacon.yaml beacon start
 ```
 
 ## Configuration
@@ -143,6 +145,10 @@ sly-fox @ 2024-12-29T18:55:11Z
 ❯ curl -X GET http://localhost:8088/services/sly-fox/status
 sly-fox @ 2024-12-29T18:55:11Z
 ```
+
+## Database
+
+Beacon uses `beacon.db` file inside your home directory to store it's data. You can specify different path using the `BEACON_DB` env variable.
 
 ## 🌐 Website flow
 

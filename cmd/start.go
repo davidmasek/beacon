@@ -25,16 +25,16 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
-		db, err := storage.InitDB()
-		if err != nil {
-			return fmt.Errorf("failed to initialize database: %w", err)
-		}
-		defer db.Close()
-
 		config, err := loadConfig(cmd)
 		if err != nil {
 			return err
 		}
+
+		db, err := storage.InitDB(config.GetString("DB"))
+		if err != nil {
+			return fmt.Errorf("failed to initialize database: %w", err)
+		}
+		defer db.Close()
 
 		// TODO: this currently overwrites other options
 		// that should happen only if specified

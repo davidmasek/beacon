@@ -30,7 +30,7 @@ var reportCmd = &cobra.Command{
 		config.Set("send-mail", sendMail)
 		config.Set("report-name", reportName)
 
-		db, err := storage.InitDB()
+		db, err := storage.InitDB(config.GetString("DB"))
 		if err != nil {
 			return err
 		}
