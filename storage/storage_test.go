@@ -21,7 +21,7 @@ func TestDbPath(t *testing.T) {
 	tmp_file := filepath.Join(dir, "test.db")
 	err = os.Setenv("BEACON_DB", tmp_file)
 	require.Nil(t, err)
-	_, err = InitDB()
+	_, err = InitDB("")
 	assert.Nil(t, err)
 	assert.FileExists(t, tmp_file)
 	os.Remove(tmp_file)

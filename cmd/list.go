@@ -10,8 +10,11 @@ var listCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(0),
 	Short: "List known services",
 	RunE: func(cmd *cobra.Command, args []string) error {
-
-		db, err := storage.InitDB()
+		config, err := loadConfig(cmd)
+		if err != nil {
+			return err
+		}
+		db, err := storage.InitDB(config.GetString("DB"))
 		if err != nil {
 			return err
 		}

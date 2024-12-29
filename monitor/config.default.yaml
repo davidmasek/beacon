@@ -1,0 +1,13 @@
+services:
+  example-heartbeat-service:
+  example-web-service:
+    url: ""
+
+email:
+  smtp_server:
+  smtp_port:
+  smtp_username:
+  smtp_password:
+  send_to:
+  sender:
+  prefix:
