@@ -1,4 +1,4 @@
-package monitor
+package config
 
 import (
 	_ "embed"
@@ -11,7 +11,12 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
+
+type Config struct {
+	settings map[string]interface{}
+}
 
 //go:embed config.default.yaml
 var DEFAULT_CONFIG []byte
@@ -101,6 +106,14 @@ func setupConfig(config *viper.Viper) (*viper.Viper, error) {
 	if err != nil {
 		return nil, err
 	}
+	data, err := os.ReadFile(config.ConfigFileUsed())
+	if err != nil {
+		return nil, err
+	}
+	config2 := &Config{settings: make(map[string]interface{})}
+	err = yaml.Unmarshal(data, config2.settings)
+	log.Println(">>>>", config2, "<<<<")
+	fmt.Printf("Config: %+v\n", config2.settings)
 
 	// TODO: refactor
 	// why does not Go have sets? :/
