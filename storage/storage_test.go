@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"maps"
 	"math/rand/v2"
 	"os"
@@ -243,4 +244,62 @@ func TestHealthCheckMetadataAlwaysPresent(t *testing.T) {
 	if got.Metadata == nil {
 		t.Fatalf("got.Metadata nil, expected initialized map")
 	}
+}
+
+// Helper for debugging. Dump database to a file. Assumes SQLite DB.
+func DumpDatabaseToFile(db Storage, filename string) error {
+	conn := db.(*SQLStorage).db
+	_, err := conn.Exec(fmt.Sprintf("VACUUM INTO '%s';", filename))
+	return err
+}
+
+func TestTaskLog(t *testing.T) {
+	db := NewTestDb(t)
+	defer db.Close()
+	status := "OK"
+	task := "check-web"
+	otherTask := "other-task"
+	timestampStr := "2024-12-26T11:22:49Z"
+	timestamp, err := time.Parse(TIME_FORMAT, timestampStr)
+	require.NoError(t, err)
+
+	// log task A -> A.1
+	err = db.CreateTaskLog(task, status, timestamp)
+	require.NoError(t, err)
+
+	// get A -> A.1
+	gotTimestamp, gotStatus, err := db.LatestTaskLog(task)
+	require.NoError(t, err)
+
+	require.Equal(t, timestamp, gotTimestamp)
+	require.Equal(t, status, gotStatus)
+
+	now := time.Now()
+	newStatus := "FAIL"
+
+	// log task B -> B.1
+	err = db.CreateTaskLog(otherTask, newStatus, now)
+	require.NoError(t, err)
+
+	// get task A -> A.1
+	gotTimestamp, gotStatus, err = db.LatestTaskLog(task)
+	require.NoError(t, err)
+
+	require.Equal(t, timestamp, gotTimestamp)
+	require.Equal(t, status, gotStatus)
+
+	// log task A -> A.2
+	err = db.CreateTaskLog(task, newStatus, now)
+	require.NoError(t, err)
+
+	// get task A -> A.2
+	gotTimestamp, gotStatus, err = db.LatestTaskLog(task)
+	require.NoError(t, err)
+
+	// we do not store sub-second time info
+	// even if we did time comparisons are tricky as they require
+	// timezones to match even if they represent the same time
+	// (i.e. two representations of the same time are not equal)
+	require.WithinDuration(t, now, gotTimestamp, time.Second)
+	require.Equal(t, newStatus, gotStatus)
 }

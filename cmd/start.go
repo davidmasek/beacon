@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"time"
 
 	"github.com/davidmasek/beacon/handlers"
 	"github.com/davidmasek/beacon/monitor"
@@ -42,7 +41,7 @@ var startCmd = &cobra.Command{
 
 		heartbeatListener := monitor.HeartbeatListener{}
 		// TODO: need to unify config loading in CLI at least a bit
-		configFile, err := cmd.Flags().GetString("config-file")
+		configFile, err := cmd.Flags().GetString("config")
 		if err != nil {
 			return err
 		}
@@ -77,8 +76,7 @@ var startCmd = &cobra.Command{
 		}
 
 		ctx, cancelScheduler := context.WithCancel(context.Background())
-		// TODO: load interval from somewhere
-		go scheduler.Start(ctx, 1*time.Hour, db, config)
+		go scheduler.Start(ctx, db, config)
 
 		if stopServer {
 			uiServer.Close()
@@ -89,6 +87,7 @@ var startCmd = &cobra.Command{
 		}
 
 		exit := make(chan struct{})
+		// block forever
 		<-exit
 		// not really needed, but linters complain otherwise
 		cancelScheduler()

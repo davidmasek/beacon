@@ -89,7 +89,7 @@ Configuration can be provided with CLI flags, environment variables and config f
 **No configuration is required** for Beacon to run. You can start without any configuration file and add it later once you need it. Some functionality
 might need configuration.
 
-By default Beacon searches for config file named `beacon.yaml` inside current directory and home directory. You can specify config file path with the `--config-file` CLI flag available for all commands.
+By default Beacon searches for config file named `beacon.yaml` inside current directory and home directory. You can specify config file path with the `--config` CLI flag available for all commands.
 
 CLI flags take precedence over environment variables, which take precedence over config file. Environment variables should start with prefix `BEACON_` and use underscores for hierarchy. For example, to overwrite value for `smtp_port` under `email` section you would set `BEACON_SMTP_PORT` env variable. Anything specified inside config file can be overwritten using env variables.
 

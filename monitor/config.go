@@ -69,25 +69,18 @@ func setupConfig(config *viper.Viper) (*viper.Viper, error) {
 
 	// TODO: refactor
 	// why does not Go have sets? :/
-	keysArr := config.AllKeys()
-	keySet := make(map[string]struct{})
-	for _, k := range keysArr {
-		// ignore sub-keys
-		if !strings.Contains(k, ".") {
-			keySet[k] = struct{}{}
-		}
-	}
+	keys := config.AllSettings()
 	expectedKeys := []string{
 		"services",
 		"email",
 	}
 	for _, expected := range expectedKeys {
-		if _, exists := keySet[expected]; !exists {
+		if _, exists := keys[expected]; !exists {
 			log.Printf("%q key not present in config", expected)
 		}
-		delete(keySet, expected)
+		delete(keys, expected)
 	}
-	for key := range keySet {
+	for key := range keys {
 		log.Printf("unexpected %q key present in config", key)
 	}
 

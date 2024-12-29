@@ -14,6 +14,15 @@ import (
 	"github.com/spf13/viper"
 )
 
+func ShouldCheckWebServices(db storage.Storage, config *viper.Viper, now time.Time) bool {
+	if !config.IsSet("services") {
+		log.Println("No services specified in config file - not checking any websites")
+		return false
+	}
+	// TODO - should follow some config or smth
+	return true
+}
+
 func CheckWebServices(db storage.Storage, services map[string]*monitor.ServiceConfig) error {
 	// TODO: using "legacy" approach to get this done quickly
 	// should look into monitor.CheckWebsites refactor
@@ -38,7 +47,65 @@ func CheckWebServices(db storage.Storage, services map[string]*monitor.ServiceCo
 	return monitor.CheckWebsites(db, websites)
 }
 
-func Report(db storage.Storage, config *viper.Viper) error {
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+// Decide if report should be generated and send at given time `query`
+//
+// Config: REPORT_TIME
+// Acceptable format is RFC3339
+// For example:
+// - 2024-12-29T13:31:28Z
+// - 2024-12-29T14:31:26+01:00
+// - 2024-12-29T05:31:26-08:00
+// The date part will be ignored.
+func ShouldReport(db storage.Storage, config *viper.Viper, query time.Time) (bool, error) {
+	// TODO: this function could use more work, building minimal functionality now
+
+	// Provide default REPORT_TIME as 17h of local time.
+	ts := time.Now()
+	defaultHour := 17
+	ref := time.Date(ts.Year(), ts.Month(), ts.Day(), defaultHour, 0, 0, 0, ts.Location())
+	config.SetDefault("REPORT_TIME", ref.Format(storage.TIME_FORMAT))
+
+	targetStr := config.GetString("REPORT_TIME")
+	target, err := time.Parse(storage.TIME_FORMAT, targetStr)
+	if err != nil {
+		return false, err
+	}
+
+	// should report when close to REPORT_TIME
+	timeDiffFromTarget :=
+		abs(target.UTC().Hour()-query.UTC().Hour())*60 +
+			abs(target.UTC().Minute()-query.UTC().Minute())
+
+	// TODO: hardcoded
+	if timeDiffFromTarget > 60 {
+		return false, nil
+	}
+
+	lastTimestamp, lastStatus, err := db.LatestTaskLog("report")
+	if err != nil {
+		return false, err
+	}
+	// no previous report or failed to report -> should report
+	if lastTimestamp.IsZero() || lastStatus != "OK" {
+		return true, nil
+	}
+	// should not report if reported recently
+	timeDiffFromLast := query.Sub(lastTimestamp).Abs()
+	if timeDiffFromLast < 90*time.Minute {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func Report(db storage.Storage, config *viper.Viper, now time.Time) error {
 	// TODO: unify with the CLI report functionality
 	reports, err := handlers.GenerateReport(db)
 	if err != nil {
@@ -72,45 +139,53 @@ func Report(db storage.Storage, config *viper.Viper) error {
 		emailErr = mailer.Send(reports, config.Sub("email"))
 		err = errors.Join(err, emailErr)
 	}
-	return err
+
+	status := "OK"
+	if err != nil {
+		status = err.Error()
+	}
+	dbErr := db.CreateTaskLog("report", status, now)
+	return errors.Join(err, dbErr)
 }
 
-func RunSingle(db storage.Storage, config *viper.Viper) error {
-	// TODO/feature FIXME
-	// TODO: should we split RunSingle (or remove it)
-	// and directly schedule the "scrape web"
-	// and "generate reports"
-	// - it might be nice since we might want to run reports at different intervals
-	// - also running it separate means we reduce work done in a single task (should be nicer to debug etc)
-	// - would potentially need some locking so we do not generate reports while scraping web
-	// 		- but not really, since the "web scraping" should run much more often than reports ...
-	//		- so we can probably just take it as normal that we don't have the "latest" data
+func RunSingle(db storage.Storage, config *viper.Viper, now time.Time) error {
 	log.Println("Do scheduling work")
-	if config.IsSet("services") {
+
+	var err error = nil
+	if ShouldCheckWebServices(db, config, now) {
 		services, err := monitor.ParseServicesConfig(config.Sub("services"))
 		if err != nil {
 			return err
 		}
+		log.Println("Checking web services...")
 		err = CheckWebServices(db, services)
 		// TODO: might want to continue on error here
 		if err != nil {
 			return err
 		}
-	} else {
-		log.Println("No services specified in config file - not checking any websites")
 	}
-	err := Report(db, config)
+	doReport, err := ShouldReport(db, config, now)
+	if err != nil {
+		return err
+	}
+	if doReport {
+		log.Println("Reporting...")
+		err = Report(db, config, now)
+	}
 	return err
 }
 
-// Periodically call RunSingle.
+// Run periodic jobs.
+// Config: SCHEDULER_PERIOD (duration)
 //
-// Will not call RunSingle again until it returns even
+// Will not call run next job again until previous one returns, even
 // if specified interval passes.
-func Start(ctx context.Context, interval time.Duration, db storage.Storage, config *viper.Viper) {
-	log.Println("Starting scheduler")
-	startFunction(ctx, interval, func(time.Time) error {
-		return RunSingle(db, config)
+func Start(ctx context.Context, db storage.Storage, config *viper.Viper) {
+	config.SetDefault("SCHEDULER_PERIOD", "15m")
+	checkInterval := config.GetDuration("SCHEDULER_PERIOD")
+	log.Printf("Starting scheduler: run each %s\n", checkInterval)
+	startFunction(ctx, checkInterval, func(now time.Time) error {
+		return RunSingle(db, config, now)
 	})
 }
 

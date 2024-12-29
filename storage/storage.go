@@ -2,6 +2,7 @@ package storage
 
 import (
 	"database/sql"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -10,6 +11,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/viper"
 )
+
+//go:embed create.sql
+var CREATE_TABLE_QUERY string
 
 // Data needed to persist a new HealthCheck
 type HealthCheckInput struct {
@@ -44,8 +48,17 @@ type Storage interface {
 	RecordHeartbeat(serviceID string, timestamp time.Time) (string, error)
 	// Return sorted list of timestamps or error
 	GetLatestHeartbeats(serviceID string, limit int) ([]time.Time, error)
+	// Create new user
 	CreateUser(email string, password string) error
+	// Get user if email and password match
 	ValidateUser(email string, password string) (*User, error)
+	// Log new task run
+	CreateTaskLog(taskName string, status string, timestamp time.Time) error
+	// Get latest task log.
+	//
+	// Return time.Time{}, empty status and nil error when none found.
+	// You can use timestamp.IsZero() to check for time.Time{}
+	LatestTaskLog(taskName string) (time.Time, string, error)
 }
 
 // https://www.sqlite.org/lang_select.html#limitoffset
@@ -64,6 +77,45 @@ func NewTestDb(t *testing.T) Storage {
 
 type SQLStorage struct {
 	db *sql.DB
+}
+
+func (s *SQLStorage) CreateTaskLog(taskName string, status string, timestamp time.Time) error {
+	timestampStr := timestamp.UTC().Format(TIME_FORMAT)
+	_, err := s.db.Exec(
+		"INSERT INTO task_logs (task_name, status, timestamp) VALUES (?, ?, ?)",
+		taskName,
+		status,
+		timestampStr,
+	)
+	return err
+}
+
+func (s *SQLStorage) LatestTaskLog(taskName string) (time.Time, string, error) {
+	var timestampStr string
+	var status string
+
+	err := s.db.QueryRow(
+		`SELECT timestamp, status 
+		 FROM task_logs
+		 WHERE task_name = ?
+		 ORDER BY timestamp DESC
+		 LIMIT 1`,
+		taskName,
+	).Scan(&timestampStr, &status)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return time.Time{}, "", nil // No logs found
+		}
+		return time.Time{}, "", err // Query error
+	}
+
+	timestamp, err := time.Parse(TIME_FORMAT, timestampStr)
+	if err != nil {
+		return time.Time{}, "", err
+	}
+
+	return timestamp, status, nil
 }
 
 func (s *SQLStorage) CreateUser(email string, password string) error {
@@ -242,26 +294,7 @@ func NewSQLStorage(path string) (*SQLStorage, error) {
 		return nil, err
 	}
 
-	// Create table for storing health checks
-	query := `
-	CREATE TABLE IF NOT EXISTS health_checks (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		user_id INTEGER,
-		service_id TEXT NOT NULL,
-		timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-		metadata TEXT,
-		FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
-	);
-	
-	CREATE TABLE IF NOT EXISTS users (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		email TEXT UNIQUE NOT NULL,
-		password_hash TEXT NOT NULL,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-	);
-	CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
-	`
-	_, err = db.Exec(query)
+	_, err = db.Exec(CREATE_TABLE_QUERY)
 	if err != nil {
 		return nil, err
 	}

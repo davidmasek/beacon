@@ -25,7 +25,7 @@ var reportCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		configFile, err := cmd.Flags().GetString("config-file")
+		configFile, err := cmd.Flags().GetString("config")
 		if err != nil {
 			return err
 		}
