@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"fmt"
 	"html/template"
 	"io/fs"
 	"log"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
-	"github.com/spf13/viper"
 )
 
 // Show services status
@@ -98,29 +96,4 @@ func handleIndex(db storage.Storage) http.HandlerFunc {
 			log.Println("Failed to render", err)
 		}
 	}
-}
-
-func StartWebUI(db storage.Storage, config *viper.Viper) (*http.Server, error) {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/{$}", handleIndex(db))
-	if config == nil {
-		config = viper.New()
-	}
-	config.SetDefault("port", "8089")
-	port := config.GetString("port")
-
-	server := &http.Server{
-		Addr:    fmt.Sprintf(":%s", port),
-		Handler: mux,
-	}
-
-	go func() {
-		fmt.Printf("Starting UI server on http://localhost:%s\n", port)
-		if err := server.ListenAndServe(); err != http.ErrServerClosed {
-			log.Print(err)
-			panic(err)
-		}
-	}()
-	return server, nil
 }

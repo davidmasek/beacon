@@ -7,39 +7,13 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/spf13/viper"
 
 	"github.com/davidmasek/beacon/storage"
 )
 
-type HeartbeatListener struct {
-}
-
-func (*HeartbeatListener) Start(db storage.Storage, config *viper.Viper) (*http.Server, error) {
-	mux := http.NewServeMux()
-
+func RegisterHeartbeatHandlers(db storage.Storage, mux *http.ServeMux) {
 	mux.HandleFunc("/beat/{service_id}", handleBeat(db))
 	mux.HandleFunc("/status/{service_id}", handleStatus(db))
-
-	if config == nil {
-		config = viper.New()
-	}
-	config.SetDefault("port", "8088")
-	port := config.GetString("port")
-
-	server := &http.Server{
-		Addr:    fmt.Sprintf(":%s", port),
-		Handler: mux,
-	}
-
-	go func() {
-		fmt.Printf("Starting HeartbeatListener server on http://localhost:%s\n", port)
-		if err := server.ListenAndServe(); err != http.ErrServerClosed {
-			log.Print(err)
-			panic(err)
-		}
-	}()
-	return server, nil
 }
 
 // Handler for /beat/{service_id}

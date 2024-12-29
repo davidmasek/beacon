@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/davidmasek/beacon/handlers"
-	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -32,13 +31,12 @@ func TestStartServer(t *testing.T) {
 	// be sure to setup DB path before interacting with Beacon
 	setupDbPathEnv(t)
 
-	heartbeatPort := "9100"
-	uiPort := "9101"
+	serverPort := "9100"
 	var outputBuffer bytes.Buffer
 	rootCmd.SetOut(&outputBuffer)
 	rootCmd.SetErr(&outputBuffer)
 	outputBuffer.Reset()
-	rootCmd.SetArgs([]string{"start", "--port", heartbeatPort, "--gui-port", uiPort, "--stop"})
+	rootCmd.SetArgs([]string{"start", "--port", serverPort, "--stop"})
 	err := rootCmd.Execute()
 	require.NoError(t, err)
 	output := outputBuffer.String()
@@ -50,8 +48,7 @@ func TestHeartbeat(t *testing.T) {
 		t.Skip("skipping testing in short mode")
 	}
 
-	heartbeatPort := "9100"
-	uiPort := "9101"
+	serverPort := "9100"
 
 	// be sure to setup DB path before interacting with Beacon
 	setupDbPathEnv(t)
@@ -74,23 +71,18 @@ func TestHeartbeat(t *testing.T) {
 	// TODO: server startup needs unification (CLI vs this test vs other tests)
 	db, err := storage.InitDB()
 	require.NoError(t, err)
-	heartbeatListener := monitor.HeartbeatListener{}
 	config := viper.New()
-	config.Set("port", heartbeatPort)
-	heartbeatServer, err := heartbeatListener.Start(db, config)
+	config.Set("port", serverPort)
+	server, err := handlers.StartServer(db, config)
 	require.NoError(t, err)
-	defer heartbeatServer.Close()
-	config.Set("port", uiPort)
-	uiServer, err := handlers.StartWebUI(db, config)
-	require.NoError(t, err)
-	defer uiServer.Close()
+	defer server.Close()
 
 	// Is the sleep needed? Seems to work fine without
 	// TODO: sometimes needed ... retry for Post might be nicer?
 	time.Sleep(100 * time.Millisecond)
 
 	service_name := "heartbeat-monitor"
-	serverAddress := fmt.Sprint("http://localhost:", heartbeatPort)
+	serverAddress := fmt.Sprint("http://localhost:", serverPort)
 
 	t.Log("Record heartbeat")
 	outputBuffer.Reset()
@@ -124,7 +116,7 @@ func TestHeartbeat(t *testing.T) {
 	assert.Equal(t, timestampIn, timestampOut)
 
 	t.Log("Check web UI")
-	html := getHTML("/", t, uiPort)
+	html := getHTML("/", t, serverPort)
 	assert.Contains(t, html, "<html")
 	assert.Contains(t, html, service_name)
 }

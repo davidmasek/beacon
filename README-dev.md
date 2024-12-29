@@ -13,12 +13,11 @@ You should start with the main [README](README.md).
     - later: needs endpoints for HealthCheck
     - /services/<id>/action might be good structure
 - 🟡 web GUI
-  - currently displays the main information
+  - 🟢 display the main information
   - ~~should also support management~~
     - management will currently be supported only by CLI
   - support auth
-    - blocked by *user management*
-  - TODO: unify ports - run on same port as HB listener
+  - 🟢 unify ports - run on same port as HB listener
 - 🟡 website monitor
   - needs more testing
 - 🟡 heartbeat/website management
