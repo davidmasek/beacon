@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"maps"
 	"math/rand/v2"
 	"os"
@@ -11,15 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// Prepare test DB
-func setupDB(t *testing.T) Storage {
-	db, err := NewSQLStorage(":memory:")
-	if err != nil {
-		t.Fatal(err)
-	}
-	return db
-}
 
 // DB location is settable via env variable
 func TestDbPath(t *testing.T) {
@@ -54,7 +46,7 @@ func setupTimestamps(t *testing.T) []time.Time {
 
 // Basic happy path - store and get a single timestamp
 func TestStoreGet(t *testing.T) {
-	db := setupDB(t)
+	db := NewTestDb(t)
 	defer db.Close()
 
 	want := "2024-10-26T11:59:51Z"
@@ -88,7 +80,7 @@ func TestStoreGet(t *testing.T) {
 
 // Test get on empty DB
 func TestGetEmpty(t *testing.T) {
-	db := setupDB(t)
+	db := NewTestDb(t)
 	defer db.Close()
 
 	serviceID := "test-service"
@@ -103,7 +95,7 @@ func TestGetEmpty(t *testing.T) {
 
 // Test storing multiple timestamps and getting them back
 func TestStoreGetMultiple(t *testing.T) {
-	db := setupDB(t)
+	db := NewTestDb(t)
 	defer db.Close()
 
 	serviceID := "test-service"
@@ -138,7 +130,7 @@ func TestStoreGetMultiple(t *testing.T) {
 
 // Test that the timestamps are returned in the correct order (newest first)
 func TestLatestHearbeatsOrder(t *testing.T) {
-	db := setupDB(t)
+	db := NewTestDb(t)
 	defer db.Close()
 
 	serviceID := "test-service"
@@ -197,7 +189,7 @@ func testAddAndRetrieveEvent(t *testing.T, db Storage, event *HealthCheckInput) 
 }
 
 func TestEvents(t *testing.T) {
-	db := setupDB(t)
+	db := NewTestDb(t)
 	defer db.Close()
 	now := time.Now().UTC()
 	serviceId := "test-service"
@@ -233,7 +225,7 @@ func TestEvents(t *testing.T) {
 // HealthCheck.Metadata should never be nil
 // The goal is to simplify code and skip `.Metadata != nil` checks everywhere
 func TestHealthCheckMetadataAlwaysPresent(t *testing.T) {
-	db := setupDB(t)
+	db := NewTestDb(t)
 	defer db.Close()
 	input := HealthCheckInput{
 		ServiceId: "foo",
@@ -252,4 +244,62 @@ func TestHealthCheckMetadataAlwaysPresent(t *testing.T) {
 	if got.Metadata == nil {
 		t.Fatalf("got.Metadata nil, expected initialized map")
 	}
+}
+
+// Helper for debugging. Dump database to a file. Assumes SQLite DB.
+func DumpDatabaseToFile(db Storage, filename string) error {
+	conn := db.(*SQLStorage).db
+	_, err := conn.Exec(fmt.Sprintf("VACUUM INTO '%s';", filename))
+	return err
+}
+
+func TestTaskLog(t *testing.T) {
+	db := NewTestDb(t)
+	defer db.Close()
+	status := "OK"
+	task := "check-web"
+	otherTask := "other-task"
+	timestampStr := "2024-12-26T11:22:49Z"
+	timestamp, err := time.Parse(TIME_FORMAT, timestampStr)
+	require.NoError(t, err)
+
+	// log task A -> A.1
+	err = db.CreateTaskLog(task, status, timestamp)
+	require.NoError(t, err)
+
+	// get A -> A.1
+	gotTimestamp, gotStatus, err := db.LatestTaskLog(task)
+	require.NoError(t, err)
+
+	require.Equal(t, timestamp, gotTimestamp)
+	require.Equal(t, status, gotStatus)
+
+	now := time.Now()
+	newStatus := "FAIL"
+
+	// log task B -> B.1
+	err = db.CreateTaskLog(otherTask, newStatus, now)
+	require.NoError(t, err)
+
+	// get task A -> A.1
+	gotTimestamp, gotStatus, err = db.LatestTaskLog(task)
+	require.NoError(t, err)
+
+	require.Equal(t, timestamp, gotTimestamp)
+	require.Equal(t, status, gotStatus)
+
+	// log task A -> A.2
+	err = db.CreateTaskLog(task, newStatus, now)
+	require.NoError(t, err)
+
+	// get task A -> A.2
+	gotTimestamp, gotStatus, err = db.LatestTaskLog(task)
+	require.NoError(t, err)
+
+	// we do not store sub-second time info
+	// even if we did time comparisons are tricky as they require
+	// timezones to match even if they represent the same time
+	// (i.e. two representations of the same time are not equal)
+	require.WithinDuration(t, now, gotTimestamp, time.Second)
+	require.Equal(t, newStatus, gotStatus)
 }

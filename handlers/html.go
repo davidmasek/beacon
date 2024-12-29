@@ -1,16 +1,19 @@
 package handlers
 
 import (
+	"embed"
 	"html/template"
 	"io"
 	"log"
 	"os"
 )
 
+//go:embed report.template.html
+var templateFs embed.FS
+
 // Write HTML Hearbeat report to `wr`
 func WriteReport(reports []ServiceReport, wr io.Writer) error {
-	// TODO: relies on relative path
-	t, err := template.ParseFiles("report.template.html")
+	t, err := template.ParseFS(templateFs, "report.template.html")
 	if err != nil {
 		return err
 	}

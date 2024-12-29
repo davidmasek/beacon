@@ -25,7 +25,7 @@ var reportCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		configFile, err := cmd.Flags().GetString("config-file")
+		configFile, err := cmd.Flags().GetString("config")
 		if err != nil {
 			return err
 		}
@@ -67,7 +67,7 @@ func init() {
 	reportCmd.Flags().String("name", "report", "Report name")
 }
 
-func report(viper *viper.Viper) error {
+func report(config *viper.Viper) error {
 	db, err := storage.InitDB()
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func report(viper *viper.Viper) error {
 		return err
 	}
 
-	filename := viper.GetString("report-name")
+	filename := config.GetString("report-name")
 
 	if !strings.HasSuffix(filename, ".html") {
 		filename = fmt.Sprintf("%s.html", filename)
@@ -89,9 +89,9 @@ func report(viper *viper.Viper) error {
 	// as it is better if at least one of the two succeeds
 	err = handlers.WriteReportToFile(reports, filename)
 
-	if viper.GetBool("send-mail") {
+	if config.GetBool("send-mail") {
 		var emailErr error
-		server, emailErr := handlers.LoadServer(viper.Sub("email"))
+		server, emailErr := handlers.LoadServer(config.Sub("email"))
 		if emailErr != nil {
 			emailErr := fmt.Errorf("failed to load SMTP server: %w", err)
 			err = errors.Join(err, emailErr)
@@ -100,7 +100,7 @@ func report(viper *viper.Viper) error {
 		mailer := handlers.SMTPMailer{
 			Server: server,
 		}
-		emailErr = mailer.Send(reports, viper.Sub("email"))
+		emailErr = mailer.Send(reports, config.Sub("email"))
 		err = errors.Join(err, emailErr)
 	}
 

@@ -31,20 +31,20 @@ func TestEndToEndHeartbeat(t *testing.T) {
 
 	service_name := "heartbeat-monitor"
 
-	viper := viper.New()
+	config := viper.New()
 	// shouldn't be fixed, but at least it's different than the default
 	heartbeatPort := "9000"
-	viper.Set("port", heartbeatPort)
+	config.Set("port", heartbeatPort)
 	t.Logf("Starting heartbeat listener on port %s\n", heartbeatPort)
 	heartbeatListener := monitor.HeartbeatListener{}
-	heartbeatServer, err := heartbeatListener.Start(db, viper)
+	heartbeatServer, err := heartbeatListener.Start(db, config)
 	require.NoError(t, err)
 	defer heartbeatServer.Close()
 
 	uiPort := "9001"
-	viper.Set("port", uiPort)
+	config.Set("port", uiPort)
 	t.Logf("Starting web UI on port %s\n", heartbeatPort)
-	uiServer, err := handlers.StartWebUI(db, viper)
+	uiServer, err := handlers.StartWebUI(db, config)
 	require.NoError(t, err)
 	defer uiServer.Close()
 	// Is the sleep needed? Seems to work fine without

@@ -22,15 +22,20 @@ You should start with the main [README](README.md).
 - 🟡 website monitor
   - needs more testing
 - 🟡 heartbeat/website management
-  - currently hardcoded, needs more dynamic approach
-  - needs refactor
-  - TODO
-- 🔴 periodic website checking
-  - this is the main missing feature currently
-- 🔴 user management
+  - mostly specified in config
+  - some support for "manual" services without config (requires more API/CLI usage)
+  - TODO: delete old/unused service
+- 🟡 periodic website checking
+  - 🟢 basic version done
+  - should decouple "web scraping" and reporting
+- 🟡 user management
+  - 🟢 DB prepared
   - would enable multi-user server
   - would enable public server
-- 🟡 friendly app configuration
+- 🔴 friendly app configuration
+  - 🔴 TODO: DB needs some documentation
+  - 🟡 TODO: relative file paths need some handling
+  - 🟡 some "test my config file" functionality would be nice
   - config format done
   - documentation done
   - needs some user-testing to make sure it makes sense
@@ -42,6 +47,7 @@ You should start with the main [README](README.md).
   - 🟢 basic github setup
   - 🟢 CI for building/testing 
   - need more time to verify / refine
+  - 🔴 stabilize DB + versioning/migrations
 - 🟡 testing
   - 🟢 unit tests for storage
   - 🟡 unit tests for CLI (TODO: test)

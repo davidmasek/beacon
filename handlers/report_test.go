@@ -55,17 +55,8 @@ func expectedStatusFromName(t *testing.T, name string) monitor.ServiceStatus {
 	return monitor.STATUS_FAIL
 }
 
-// Prepare test DB
-func setupDB(t *testing.T) storage.Storage {
-	db, err := storage.NewSQLStorage(":memory:")
-	if err != nil {
-		t.Fatal(err)
-	}
-	return db
-}
-
 func TestWriteReport(t *testing.T) {
-	db := setupDB(t)
+	db := storage.NewTestDb(t)
 	defer db.Close()
 
 	for _, input := range testServicesInput {

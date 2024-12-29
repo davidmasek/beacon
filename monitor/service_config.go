@@ -23,7 +23,7 @@ func defaultServiceConfig(id string) *ServiceConfig {
 		Timeout:     24 * time.Hour,
 		Enabled:     true,
 		Url:         "",
-		HttpStatus:  nil,
+		HttpStatus:  []int{200},
 		BodyContent: nil,
 	}
 }
@@ -54,7 +54,9 @@ func NewServiceConfig(id string, input map[string]interface{}) (*ServiceConfig, 
 					return nil, fmt.Errorf("[%s] invalid value in status, got %v", id, s)
 				}
 			}
-			service.HttpStatus = parsedStatuses
+			if len(parsedStatuses) > 0 {
+				service.HttpStatus = parsedStatuses
+			}
 		} else {
 			return nil, fmt.Errorf("[%s] invalid type for field status, got %q", id, inputStatus)
 		}
