@@ -30,7 +30,7 @@ go install github.com/davidmasek/beacon@latest
 beacon start --config config.sample.yaml
 ```
 
-You can always check current status of your services on the web GUI, by default on [http://localhost:8089](localhost:8089).
+You can always check current status of your services on the web GUI, by default on [http://localhost:8088](localhost:8088).
 If you have SMTP configured, you will receive periodic reports via email.
 
 
@@ -79,7 +79,7 @@ For production usage you should mount your config file instead of `config.sample
 You can also use docker directly without compose:
 ```sh
 docker build -t beacon .
-docker run --rm -p 8080:8080 -p 8089:8089 -v $(pwd)/config.sample.yaml:/root/beacon.yaml:ro beacon start
+docker run --rm -p 8080:8080 -v $(pwd)/config.sample.yaml:/root/beacon.yaml:ro beacon start
 ```
 
 ## Configuration

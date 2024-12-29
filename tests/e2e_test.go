@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/davidmasek/beacon/handlers"
-	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -33,37 +32,30 @@ func TestEndToEndHeartbeat(t *testing.T) {
 
 	config := viper.New()
 	// shouldn't be fixed, but at least it's different than the default
-	heartbeatPort := "9000"
-	config.Set("port", heartbeatPort)
-	t.Logf("Starting heartbeat listener on port %s\n", heartbeatPort)
-	heartbeatListener := monitor.HeartbeatListener{}
-	heartbeatServer, err := heartbeatListener.Start(db, config)
+	serverPort := "9000"
+	config.Set("port", serverPort)
+	t.Logf("Starting server on port %s\n", serverPort)
+	server, err := handlers.StartServer(db, config)
 	require.NoError(t, err)
-	defer heartbeatServer.Close()
+	defer server.Close()
 
-	uiPort := "9001"
-	config.Set("port", uiPort)
-	t.Logf("Starting web UI on port %s\n", heartbeatPort)
-	uiServer, err := handlers.StartWebUI(db, config)
-	require.NoError(t, err)
-	defer uiServer.Close()
 	// Is the sleep needed? Seems to work fine without
 	// TODO: sometimes needed ... retry for Post might be nicer?
 	time.Sleep(100 * time.Millisecond)
 
 	t.Log("Record heartbeat")
-	input := Post(fmt.Sprintf("/beat/%s", service_name), t, heartbeatPort)
+	input := Post(fmt.Sprintf("/beat/%s", service_name), t, serverPort)
 	assert.Contains(t, input, service_name)
 	timestampIn := strings.Split(input, " ")[2]
 
 	t.Log("Retrieve heartbeat status")
-	output := Get(fmt.Sprintf("/status/%s", service_name), t, heartbeatPort)
+	output := Get(fmt.Sprintf("/status/%s", service_name), t, serverPort)
 	assert.Contains(t, output, service_name)
 	timestampOut := strings.Split(output, " ")[2]
 	assert.Equal(t, timestampIn, timestampOut)
 
 	t.Log("Check web UI")
-	html := Get("/", t, uiPort)
+	html := Get("/", t, serverPort)
 	assert.Contains(t, html, "<html")
 	assert.Contains(t, html, service_name)
 }

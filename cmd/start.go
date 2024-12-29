@@ -24,10 +24,6 @@ var startCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		guiPort, err := cmd.Flags().GetInt("gui-port")
-		if err != nil {
-			return err
-		}
 		stopServer, err := cmd.Flags().GetBool("stop")
 		if err != nil {
 			return err
@@ -39,7 +35,6 @@ var startCmd = &cobra.Command{
 		}
 		defer db.Close()
 
-		heartbeatListener := monitor.HeartbeatListener{}
 		// TODO: need to unify config loading in CLI at least a bit
 		configFile, err := cmd.Flags().GetString("config")
 		if err != nil {
@@ -64,13 +59,11 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
+		// TODO: this currently overwrites other options
+		// that should happen only if specified
+		// Is it possible to distinguish with Cobra?
 		config.Set("port", port)
-		heartbeatServer, err := heartbeatListener.Start(db, config)
-		if err != nil {
-			return err
-		}
-		config.Set("port", guiPort)
-		uiServer, err := handlers.StartWebUI(db, config)
+		server, err := handlers.StartServer(db, config)
 		if err != nil {
 			return err
 		}
@@ -79,8 +72,7 @@ var startCmd = &cobra.Command{
 		go scheduler.Start(ctx, db, config)
 
 		if stopServer {
-			uiServer.Close()
-			heartbeatServer.Close()
+			server.Close()
 			cancelScheduler()
 			cmd.Println(SERVER_SUCCESS_MESSAGE)
 			return nil
@@ -98,8 +90,7 @@ var startCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(startCmd)
 
-	startCmd.Flags().Int("port", 8088, "Port where the heartbeat server should run")
-	startCmd.Flags().Int("gui-port", 8089, "Port where the GUI server should run")
+	startCmd.Flags().Int("port", 8088, "Port where the server should run")
 	startCmd.Flags().Bool("stop", false, "Stop the server after starting")
 	startCmd.Flags().Bool("background", false, "Run in the background")
 }
