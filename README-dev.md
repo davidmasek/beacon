@@ -35,6 +35,9 @@ You should start with the main [README](README.md).
   - 🔴 TODO: DB needs some documentation
   - 🟡 TODO: relative file paths need some handling
   - 🟡 some "test my config file" functionality would be nice
+  - 🔴 config file refactor
+    - 🔴 config file should be required, but provided by default (inside homedir?)
+    - 🔴 some utilities could be provided to check it / update it
   - config format done
   - documentation done
   - needs some user-testing to make sure it makes sense
@@ -56,6 +59,13 @@ You should start with the main [README](README.md).
     - maybe for reports in the future
   - 🟡 end-to-end CLI test
     - with Docker
+  - 🟡 test quality
+    - some refactors would be nice
+    - it might be good to not rely on external websites for unit testing, but not sure if it's worth it
+      - https://pkg.go.dev/testing#hdr-Main
+      - or just setup/teardown where needed...
+  - 
+
 
 
 

@@ -36,35 +36,24 @@ If you have SMTP configured, you will receive periodic reports via email.
 
 To monitor your project, send heartbeats periodically from your application:
 ```sh
-# using Beacon CLI
-beacon heartbeat my-service-name
-
-# using HTTP API
-# curl as an example, use anything you want
-curl -X POST http://localhost:8088/beat/my-service-name
+# use HTTP API (curl as an example, use anything you want)
+curl -X POST http://localhost:8088/services/my-service-name/beat
 ```
 
-You can check status of your service(s), useful for programmatic access:
-```sh
-# using Beacon CLI
-beacon status my-service-name
+To monitor your websites specify them in config file and Beacon will check them
+periodically.
 
-# using HTTP API
-# curl as an example, use anything you want
-curl http://localhost:8088/status/my-service-name
+Beacon will automatically send you reports about your services. You can also
+retrieve current status if needed.
+```sh
+# use HTTP API (curl as an example, use anything you want)
+curl http://localhost:8088/services/my-service-name/status
 
 # generate report for all your services
 beacon report
 # generate report and send it via email
 # (see below for email configuration)
 beacon report --send-mail
-```
-
-You can also check health of websites:
-```sh
-# usage: beacon check <service-id> <url>
-beacon check my-github https://github.com/davidmasek/beacon
-beacon status my-github
 ```
 
 ### Docker
