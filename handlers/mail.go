@@ -7,14 +7,14 @@ import (
 	"net/smtp"
 	"strings"
 
-	"github.com/spf13/viper"
+	"github.com/davidmasek/beacon/conf"
 )
 
 type SMTPMailer struct {
 	Server SMTPServer
 }
 
-func (sm SMTPMailer) Send(reports []ServiceReport, emailConfig *viper.Viper) error {
+func (sm SMTPMailer) Send(reports []ServiceReport, emailConfig *conf.Config) error {
 	var buffer bytes.Buffer
 
 	log.Printf("[SMTPMailer] Generating report")
@@ -56,7 +56,7 @@ type SMTPServer struct {
 }
 
 // Load the SMTP server details from config
-func LoadServer(emailConfig *viper.Viper) (SMTPServer, error) {
+func LoadServer(emailConfig *conf.Config) (SMTPServer, error) {
 	return SMTPServer{
 		server:   emailConfig.GetString("SMTP_SERVER"),
 		port:     emailConfig.GetString("SMTP_PORT"),

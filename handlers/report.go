@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/davidmasek/beacon/conf"
 	"github.com/davidmasek/beacon/storage"
-	"github.com/spf13/viper"
 )
 
 func GenerateReport(db storage.Storage) ([]ServiceReport, error) {
@@ -47,7 +47,7 @@ func GenerateReport(db storage.Storage) ([]ServiceReport, error) {
 	return reports, nil
 }
 
-func sendEmail(config *viper.Viper, reports []ServiceReport) error {
+func sendEmail(config *conf.Config, reports []ServiceReport) error {
 	if !config.IsSet("email") {
 		err := fmt.Errorf("no email configuration provided")
 		return err
@@ -66,7 +66,7 @@ func sendEmail(config *viper.Viper, reports []ServiceReport) error {
 // Generate, save and send report.
 //
 // See ShouldReport to check if this task should be run.
-func DoReportTask(db storage.Storage, config *viper.Viper, now time.Time) error {
+func DoReportTask(db storage.Storage, config *conf.Config, now time.Time) error {
 	reports, err := GenerateReport(db)
 	if err != nil {
 		return err

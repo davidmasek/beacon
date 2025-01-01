@@ -94,9 +94,8 @@ Some design choices:
     - for creating new data there is HealthCheckInput - currently same as HealthCheck without ID, in future possibly different
 - naming conventions:
     - ID will be lowercased when used in variable name - FooId - to follow CamelCaseNaming
-- dependency chain / architecture:
-    - storage < monitor < handlers < cmd
-    - storage (DB) is the base, handles persistence, should depend on nothing (nothing internal, can depend e.g. on SQLite)
+- modules:
+    - storage (DB) is the base, handles persistence
     - monitors interact with the outside world and store health checks to DB
     - handlers
       - take data from DB and do something with it
@@ -104,5 +103,7 @@ Some design choices:
       - send notifications
     - cmd
       - entrypoints
-      - can depend on anything (apart from each other)
-      - should be simple and high-level
+      - should be simple, only wrap existing functionality
+    - conf
+      - store/load configuration
+      - name chosen to prevent naming variables `config` (not super happy about naming here)

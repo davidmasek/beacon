@@ -1,10 +1,8 @@
-package config
+package conf
 
 import (
 	"fmt"
 	"time"
-
-	"github.com/spf13/viper"
 )
 
 type ServiceConfig struct {
@@ -110,15 +108,16 @@ func (sc *ServiceConfig) IsWebService() bool {
 	return sc.Url != ""
 }
 
-func ParseServicesConfig(servicesConfig *viper.Viper) (map[string]*ServiceConfig, error) {
-	inputs := make(map[string]map[string]interface{})
-	err := servicesConfig.Unmarshal(&inputs)
-	if err != nil {
-		return nil, err
-	}
+func ParseServicesConfig(servicesConfig *Config) (map[string]*ServiceConfig, error) {
+	inputs := servicesConfig.AllSettings()
 
 	services := make(map[string]*ServiceConfig)
-	for id, input := range inputs {
+	for id, rawInput := range inputs {
+		input, ok := rawInput.(map[string]interface{})
+		// TODO: is this the correct check for empty values?
+		if !ok {
+			input = make(map[string]interface{})
+		}
 		serviceConfig, err := NewServiceConfig(id, input)
 		if err != nil {
 			return nil, err

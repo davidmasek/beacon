@@ -313,7 +313,7 @@ func InitDB(dbPath string) (Storage, error) {
 	// Always falling back to env var makes the path
 	// rewritable independent on how config is loaded.
 	// ---
-	// Alternatively we could pass config as usual with *viper.Viper
+	// Alternatively we could pass config as usual with *conf.Config
 	// but if that would not be set to read from env variables
 	// (due to an error) than we could modify the wrong database.
 	// Due to high impact of a potential mistake we use

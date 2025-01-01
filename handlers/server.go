@@ -5,21 +5,18 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/davidmasek/beacon/conf"
 	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
-	"github.com/spf13/viper"
 )
 
-func StartServer(db storage.Storage, config *viper.Viper) (*http.Server, error) {
+func StartServer(db storage.Storage, config *conf.Config) (*http.Server, error) {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/{$}", handleIndex(db))
 
 	monitor.RegisterHeartbeatHandlers(db, mux)
-
-	if config == nil {
-		config = viper.New()
-	}
+	// TODO: centralize defaults
 	config.SetDefault("port", "8088")
 	port := config.GetString("port")
 

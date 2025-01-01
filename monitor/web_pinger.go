@@ -1,7 +1,6 @@
 package monitor
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -11,24 +10,12 @@ import (
 	"strings"
 
 	"github.com/davidmasek/beacon/storage"
-	"github.com/spf13/viper"
 )
-
-type WebPinger struct{}
 
 type WebConfig struct {
 	Url         string   `mapstructure:"url"`
 	HttpStatus  []int    `mapstructure:"status"`
 	BodyContent []string `mapstructure:"content"`
-}
-
-func (*WebPinger) Start(db storage.Storage, config *viper.Viper) error {
-	websites := make(map[string]WebConfig)
-	err := config.UnmarshalKey("websites", &websites)
-	if err != nil {
-		return fmt.Errorf("fatal error unmarshaling config file: %w", err)
-	}
-	return CheckWebsites(db, websites)
 }
 
 func CheckWebsites(db storage.Storage, websites map[string]WebConfig) error {

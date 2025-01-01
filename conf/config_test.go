@@ -1,4 +1,4 @@
-package config
+package conf
 
 import (
 	"os"
@@ -15,6 +15,9 @@ func TestLoadConfigFrom(t *testing.T) {
 	config, err := DefaultConfigFrom(exampleConfigFile)
 	require.NoError(t, err)
 	require.NotNil(t, config)
+
+	require.True(t, config.IsSet("services"), config)
+	require.True(t, config.IsSet("email"), config)
 }
 
 func TestEnvVariablesOverwrite(t *testing.T) {
@@ -29,8 +32,9 @@ func TestEnvVariablesOverwrite(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, config)
 
+	require.True(t, config.IsSet("email"), config)
 	emailConfig := config.Sub("email")
 	t.Log(emailConfig.AllSettings())
-	assert.Equal(t, "my-new-prefix", emailConfig.GetString("prefix"))
-	assert.Equal(t, 123, emailConfig.GetInt("smtp_port"))
+	assert.Equal(t, "my-new-prefix", emailConfig.GetString("prefix"), emailConfig)
+	assert.Equal(t, 123, emailConfig.GetInt("smtp_port"), emailConfig)
 }
