@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/davidmasek/beacon/monitor"
+	"github.com/davidmasek/beacon/conf"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRunSingle(t *testing.T) {
 	db := storage.NewTestDb(t)
-	config, err := monitor.ExampleConfig()
+	config, err := conf.ExampleConfig()
 	require.NoError(t, err)
 
 	tmp, err := os.CreateTemp("", "beacon-test-report-*.html")
@@ -40,7 +40,7 @@ func TestRunSingle(t *testing.T) {
 func TestShouldReport(t *testing.T) {
 	db := storage.NewTestDb(t)
 	defer db.Close()
-	config, err := monitor.ExampleConfig()
+	config, err := conf.ExampleConfig()
 	require.NoError(t, err)
 
 	targetStr := "2024-12-29T05:31:26-08:00"

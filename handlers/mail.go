@@ -7,14 +7,14 @@ import (
 	"net/smtp"
 	"strings"
 
-	"github.com/spf13/viper"
+	"github.com/davidmasek/beacon/conf"
 )
 
 type SMTPMailer struct {
 	Server SMTPServer
 }
 
-func (sm SMTPMailer) Send(reports []ServiceReport, emailConfig *viper.Viper) error {
+func (sm SMTPMailer) Send(reports []ServiceReport, emailConfig *conf.Config) error {
 	var buffer bytes.Buffer
 
 	log.Printf("[SMTPMailer] Generating report")
@@ -23,8 +23,10 @@ func (sm SMTPMailer) Send(reports []ServiceReport, emailConfig *viper.Viper) err
 		return err
 	}
 
-	emailConfig.SetDefault("prefix", "")
-	prefix := emailConfig.GetString("prefix")
+	prefix := ""
+	if emailConfig.IsSet("prefix") {
+		prefix = emailConfig.GetString("prefix")
+	}
 	// add whitespace after prefix if it exists and is not included already
 	if prefix != "" && !strings.HasSuffix(prefix, " ") {
 		prefix = prefix + " "
@@ -56,7 +58,7 @@ type SMTPServer struct {
 }
 
 // Load the SMTP server details from config
-func LoadServer(emailConfig *viper.Viper) (SMTPServer, error) {
+func LoadServer(emailConfig *conf.Config) (SMTPServer, error) {
 	return SMTPServer{
 		server:   emailConfig.GetString("SMTP_SERVER"),
 		port:     emailConfig.GetString("SMTP_PORT"),

@@ -5,22 +5,18 @@ import (
 	"log"
 	"time"
 
+	"github.com/davidmasek/beacon/conf"
 	"github.com/davidmasek/beacon/handlers"
 	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
-	"github.com/spf13/viper"
 )
 
-func ShouldCheckWebServices(db storage.Storage, config *viper.Viper, now time.Time) bool {
-	if !config.IsSet("services") {
-		log.Println("No services specified in config file - not checking any websites")
-		return false
-	}
+func ShouldCheckWebServices(db storage.Storage, config *conf.Config, now time.Time) bool {
 	// TODO - should follow some config or smth
 	return true
 }
 
-func CheckWebServices(db storage.Storage, services map[string]*monitor.ServiceConfig) error {
+func CheckWebServices(db storage.Storage, services map[string]*conf.ServiceConfig) error {
 	// TODO: using "legacy" approach to get this done quickly
 	// should look into monitor.CheckWebsites refactor
 	// and getting rid of WebConfig struct
@@ -60,7 +56,7 @@ func abs(x int) int {
 // - 2024-12-29T14:31:26+01:00
 // - 2024-12-29T05:31:26-08:00
 // The date part will be ignored.
-func ShouldReport(db storage.Storage, config *viper.Viper, query time.Time) (bool, error) {
+func ShouldReport(db storage.Storage, config *conf.Config, query time.Time) (bool, error) {
 	// TODO: this function could use more work, building minimal functionality now
 
 	// Provide default REPORT_TIME as 17h of local time.
@@ -102,12 +98,12 @@ func ShouldReport(db storage.Storage, config *viper.Viper, query time.Time) (boo
 	return true, nil
 }
 
-func RunSingle(db storage.Storage, config *viper.Viper, now time.Time) error {
+func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 	log.Println("Do scheduling work")
 
 	var err error = nil
 	if ShouldCheckWebServices(db, config, now) {
-		services, err := monitor.ParseServicesConfig(config.Sub("services"))
+		services, err := conf.ParseServicesConfig(config.Sub("services"))
 		if err != nil {
 			return err
 		}
@@ -134,7 +130,7 @@ func RunSingle(db storage.Storage, config *viper.Viper, now time.Time) error {
 //
 // Will not call run next job again until previous one returns, even
 // if specified interval passes.
-func Start(ctx context.Context, db storage.Storage, config *viper.Viper) {
+func Start(ctx context.Context, db storage.Storage, config *conf.Config) {
 	config.SetDefault("SCHEDULER_PERIOD", "15m")
 	checkInterval := config.GetDuration("SCHEDULER_PERIOD")
 	log.Printf("Starting scheduler: run each %s\n", checkInterval)

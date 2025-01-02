@@ -4,22 +4,21 @@ import (
 	"log"
 	"strings"
 
-	"github.com/davidmasek/beacon/monitor"
+	"github.com/davidmasek/beacon/conf"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
-func loadConfig(cmd *cobra.Command) (*viper.Viper, error) {
+func loadConfig(cmd *cobra.Command) (*conf.Config, error) {
 	configFile, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return nil, err
 	}
 
 	if configFile != "" {
-		return monitor.DefaultConfigFrom(configFile)
+		return conf.DefaultConfigFrom(configFile)
 	}
 
-	config, err := monitor.DefaultConfig()
+	config, err := conf.DefaultConfig()
 	// TODO: quick fix to enable start when no config file found
 	// default one should be created instead
 	if err != nil && strings.Contains(err.Error(), `Config File "beacon.yaml" Not Found in`) {
