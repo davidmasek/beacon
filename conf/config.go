@@ -20,24 +20,58 @@ const ENV_VAR_PREFIX = "BEACON_"
 
 type Config struct {
 	envPrefix string
+	parents   []string
 	settings  map[string]interface{}
 	// manually set, should take precedence
 	overrides map[string]interface{}
 }
 
 func (config *Config) AllSettings() map[string]interface{} {
-	return config.settings
+	settings := config.settings
+	for _, parent := range config.parents {
+		if settings == nil {
+			return nil
+		}
+		settingsSub, ok := settings[parent].(map[string]interface{})
+		if ok {
+			settings = settingsSub
+		} else {
+			return nil
+		}
+	}
+	return settings
 }
 
 func (config *Config) keyToEnvVar(key string) string {
-	key = strings.ReplaceAll(key, ".", "_")
+	// todo: nested access
+	if strings.Contains(key, ".") {
+		panic("nested access with `.` not implemented")
+	}
+	// key = strings.ReplaceAll(key, ".", "_")
+	key = config.envPrefix + strings.Join(config.parents, "_") + "_" + key
 	key = strings.ToUpper(key)
-	return config.envPrefix + key
+	return key
 }
 
 func (config *Config) get(key string) interface{} {
-	// TODO: dot notation for nested access not implemented
-	val, ok := config.overrides[key]
+	if config == nil {
+		return nil
+	}
+	// todo: nested access
+	if strings.Contains(key, ".") {
+		panic("nested access with `.` not implemented")
+	}
+	overrides := config.overrides
+	for _, parent := range config.parents {
+		if overrides == nil {
+			break
+		}
+		overridesSub, ok := overrides[parent].(map[string]interface{})
+		if ok {
+			overrides = overridesSub
+		}
+	}
+	val, ok := overrides[key]
 	if ok {
 		return val
 	}
@@ -46,8 +80,20 @@ func (config *Config) get(key string) interface{} {
 	if isSet {
 		return envVal
 	}
-	val, ok = config.settings[key]
-	// TODO: do we want default or nil?
+	settings := config.settings
+	for _, parent := range config.parents {
+		if settings == nil {
+			return nil
+		}
+		settingsSub, ok := settings[parent].(map[string]interface{})
+		if ok {
+			settings = settingsSub
+		} else {
+			return nil
+		}
+	}
+	val, ok = settings[key]
+
 	if !ok {
 		return nil
 	}
@@ -90,7 +136,7 @@ var boolyStrings = map[string]bool{
 }
 
 func (config *Config) GetBool(key string) bool {
-	val := config.settings[key]
+	val := config.get(key)
 	boolVal, isBool := val.(bool)
 	if isBool {
 		return boolVal
@@ -120,55 +166,54 @@ func (config *Config) GetDuration(key string) time.Duration {
 }
 
 func (config *Config) Set(key string, value interface{}) {
-	// TODO: dot notation for nested access not implemented
+	// todo: nested access
+	if strings.Contains(key, ".") {
+		panic("nested access with `.` not implemented")
+	}
+	if len(config.parents) > 0 {
+		// todo: sub configs are read only for now
+		// not sure what to do with them atm
+		panic("Cannot set values for .Sub configs")
+	}
 	config.overrides[key] = value
 }
 
 func (config *Config) SetDefault(key string, value interface{}) {
-	if !config.IsSet(key) {
+	// todo: nested access
+	if strings.Contains(key, ".") {
+		panic("nested access with `.` not implemented")
+	}
+	if len(config.parents) > 0 {
+		// todo: sub configs are read only for now
+		// not sure what to do with them atm
+		panic("Cannot set values for .Sub configs")
+	}
+	val := config.get(key)
+	if val == nil {
 		config.settings[key] = value
 	}
 }
 
 func (config *Config) IsSet(key string) bool {
-	_, ok := config.overrides[key]
-	if ok {
-		return true
-	}
-	_, isSet := os.LookupEnv(config.keyToEnvVar(key))
-	if isSet {
-		return true
-	}
-	_, ok = config.settings[key]
-	return ok
-}
-
-func subSettings(parent map[string]interface{}, key string) map[string]interface{} {
-	val, ok := parent[key]
-	if !ok {
-		return map[string]interface{}{}
-	}
-	child, ok := val.(map[string]interface{})
-	// if config[key] is not a dict, it is a scalar
-	// to keep the same structure we convert it to map
-	// with the scalar as key and no value
-	// todo: maybe better design could be pondered here
-	if !ok {
-		child = make(map[string]interface{})
-		child[val.(string)] = struct{}{}
-	}
-	return child
+	// here if the key exists but has nil value we return false
+	// now this is kinda stupid but it kinda makes sense for our use-cases
+	// I don't have a solution that would be simple to do and work well atm
+	// todo: probably want to rethink the whole Config anyway
+	val := config.get(key)
+	return val != nil
 }
 
 func (config *Config) Sub(key string) *Config {
-	// TODO: doing a quick implementation here
-	// either needs more testing or remove this method
-	sub := &Config{}
-	sub.envPrefix = config.envPrefix + strings.ToUpper(key) + "_"
-	sub.overrides = subSettings(config.overrides, key)
-	sub.settings = subSettings(config.settings, key)
-
-	return sub
+	// todo: kinda weird implementation, not sure how I want to use this yet
+	if !config.IsSet(key) {
+		return nil
+	}
+	return &Config{
+		envPrefix: config.envPrefix,
+		parents:   append(config.parents, key),
+		settings:  config.settings,
+		overrides: config.overrides,
+	}
 }
 
 //go:embed config.default.yaml
@@ -239,17 +284,10 @@ func DefaultConfigFrom(configFile string) (*Config, error) {
 func NewConfig() *Config {
 	config := &Config{
 		envPrefix: ENV_VAR_PREFIX,
+		parents:   []string{},
 		settings:  make(map[string]interface{}),
 		overrides: make(map[string]interface{}),
 	}
-	return config
-}
-
-// Minimal working config
-func BaseConfig() *Config {
-	config := NewConfig()
-	config.settings["services"] = []string{}
-	config.settings["email"] = map[string]string{}
 	return config
 }
 

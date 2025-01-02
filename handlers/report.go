@@ -86,7 +86,7 @@ func DoReportTask(db storage.Storage, config *conf.Config, now time.Time) error 
 	// TODO: need better way so check if should send email
 	// currently the config.IsSet handles the "config-file path"
 	// and allows overwrite via config "send-mail" variable for CLI usage
-	shouldSendEmail := config.IsSet("email.smtp_password")
+	shouldSendEmail := config.Sub("email").IsSet("smtp_password")
 	if config.IsSet("send-mail") {
 		shouldSendEmail = config.GetBool("send-mail")
 	}
