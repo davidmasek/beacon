@@ -1,4 +1,4 @@
-package monitor
+package conf
 
 import (
 	"path/filepath"
@@ -31,4 +31,13 @@ func TestLoadExampleConfig(t *testing.T) {
 	assert.Nil(t, services["example-basic-web"].BodyContent)
 
 	assert.Equal(t, services["example-temp-disable"].Enabled, false)
+
+	// Service without config should still be included.
+	// Viper does not handle this well:
+	// - https://github.com/spf13/viper/issues/406
+	// Possible alternatives:
+	// - https://github.com/knadh/koanf
+	// - roll own config
+	require.Contains(t, services, "beacon-periodic-checker")
+	assert.Equal(t, services["beacon-periodic-checker"].Enabled, true)
 }

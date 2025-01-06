@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/davidmasek/beacon/conf"
 	"github.com/davidmasek/beacon/handlers"
 	"github.com/davidmasek/beacon/storage"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,7 +30,7 @@ func TestEndToEndHeartbeat(t *testing.T) {
 
 	service_name := "heartbeat-monitor"
 
-	config := viper.New()
+	config := conf.NewConfig()
 	// shouldn't be fixed, but at least it's different than the default
 	serverPort := "9000"
 	config.Set("port", serverPort)
