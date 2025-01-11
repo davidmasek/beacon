@@ -32,3 +32,13 @@ CREATE TABLE IF NOT EXISTS service_state (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_service_state_service_id ON service_state(service_id);
+
+CREATE TABLE IF NOT EXISTS schema_version (
+    version INTEGER NOT NULL,
+    applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert the initial schema version if no entries exist
+INSERT INTO schema_version (version, applied_at)
+SELECT 1, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM schema_version);
