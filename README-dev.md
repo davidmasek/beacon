@@ -4,6 +4,10 @@ This documents describes some internals, implementation details, and tries it's 
 
 You should start with the main [README](README.md).
 
+TODO: json API responses
+TODO: deploy and try how it works
+TODO: 
+
 ## 🚧 Feature list:
 - 🟢 heartbeat listener
   - 🟢 HTTP server
