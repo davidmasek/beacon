@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -88,4 +89,24 @@ func TestConfigSet(t *testing.T) {
 	config.Set("foo", true)
 	foo := config.GetBool("foo")
 	require.True(t, foo)
+}
+
+func TestSecretPrint(t *testing.T) {
+	secret := Secret{"Greg"}
+	assert.Equal(t, secret.Get(), "Greg")
+	assert.NotContains(t, fmt.Sprint(secret), "Greg")
+	assert.NotContains(t, fmt.Sprint(&secret), "Greg")
+	assert.NotContains(t, fmt.Sprint([]Secret{secret}), "Greg")
+	assert.NotContains(t, fmt.Sprint([]*Secret{&secret}), "Greg")
+	assert.NotContains(t, secret.String(), "Greg")
+	assert.NotContains(t, fmt.Sprintf("%v", secret), "Greg")
+	assert.NotContains(t, fmt.Sprintf("%+v", secret), "Greg")
+	assert.NotContains(t, fmt.Sprintf("%#v", secret), "Greg")
+
+	config := NewConfig()
+	config.settings["password"] = secret
+	assert.NotContains(t, fmt.Sprint(config), "Greg")
+	assert.NotContains(t, fmt.Sprintf("%v", config), "Greg")
+	assert.NotContains(t, fmt.Sprintf("%+v", config), "Greg")
+	assert.NotContains(t, fmt.Sprintf("%#v", config), "Greg")
 }
