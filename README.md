@@ -2,15 +2,14 @@
 
 ![Beacon](imgs/Beacon-wide-bg.webp)
 
-**Track health of your projects.**
+**Monitor your websites and periodic jobs with ease.**  
 
-Simple heartbeat and website monitor.
+Beacon tracks the health of your websites, servers, and applications, ensuring that everything runs as it should.
 
-The goal of this app is to help you track the health of your projects (= everything is still running as it should). You can monitor:
-- websites
-- periodic jobs (cron or other)
-- anything that can send HTTP POST request
-- anything that can receive HTTP GET request
+You can use Beacon to:
+- Automatically check website availability and content.
+- Receive notifications when services fail to send updates (heartbeats).
+- Get periodic health reports via email or web GUI.
 
 There are two main ways to use Beacon:
 - Beacon checks your website or server for expected response = "web service".
@@ -22,30 +21,199 @@ Beacon aims to be flexible and lets you choose how to use it.
 
 Beacon can be easily installed anywhere [Go](https://go.dev/) is available.
 
+1. **Install Beacon**
 ```sh
-# install as executable
 go install github.com/davidmasek/beacon@latest
-
+```
+2. **Start the Server**
+```sh
 # start server
 beacon start --config config.sample.yaml
 ```
+3. **Monitor Your Services**
+- Website Monitoring: Use the configuration file to specify URLs for automatic periodic checks.
+- Heartbeat Monitoring: Send periodic health updates (heartbeats) from your applications.
+4. **Check the Status**
+- Access the web GUI at http://localhost:8088
+- Receive email notifications
 
-You can always check current status of your services on the web GUI, by default on [http://localhost:8088](localhost:8088).
-If you have SMTP configured, you will receive periodic reports via email.
+### Docker
 
-
-To monitor your project, send heartbeats periodically from your application:
+Beacon is also available as a Docker container. [`compose.yaml`](./compose.yaml) is provided for convenience. Simply start Docker with:
 ```sh
-# use HTTP API (curl as an example, use anything you want)
-curl -X POST http://localhost:8088/services/my-service-name/beat
+# mount your database inside `compose.yaml` to persist data
+docker compose up
 ```
 
-To monitor your websites specify them in config file and Beacon will check them
-periodically.
+For production usage you should mount your config file instead of [`config.sample.yaml`](./config.sample.yaml).
 
-Beacon will automatically send you reports about your services. You can also
-retrieve current status if needed.
+You can also use docker directly without compose:
 ```sh
+docker build -t beacon .
+# add `-v $(pwd)/beacon.db:/root/beacon.db` to persist the database
+docker run --rm -p 8080:8080 -v $(pwd)/config.sample.yaml:/root/beacon.yaml beacon start
+```
+
+## 🔧 Configuration
+
+Beacon uses a configuration file to define monitored services and email settings for notifications. The default location is `~/beacon.yaml`, but you can specify a custom location using the `--config` CLI flag. If no configuration file is found, Beacon will create a default one.
+
+### Examples
+
+**Websites.** Verify that your homepage is accessible.
+```yaml
+services:
+  my-homepage:
+    url: "https://example.com/"
+```
+
+**APIs.** Verify that your API is accessible and returning expected content.
+```yaml
+services:
+  my-api:
+    url: "https://api.example.com/health"
+    status: [200]
+    content: ["healthy"]
+```
+
+**Periodic Jobs.** Ensure your cron jobs or other recurring tasks are running by sending a heartbeat after each run.
+```yaml
+services:
+  nightly-backup:
+```
+
+**Applications.** Anything than can send HTTP POST request works.
+```yaml
+services:
+  app-server:
+```
+
+### Service configuration
+
+Services are defined in the services section of the config file. Each service must have a unique name.
+
+**Web services**: Specify a url to periodically check the service.
+
+```yaml
+services:
+  beacon-github:
+    url: "https://github.com/davidmasek/beacon"
+```
+
+**Heartbeat services**: Specify only the service name.
+
+Note that the line still ends with colon `:`, to ensure it is valid YAML file.
+
+```yaml
+services:
+  my-app:
+```
+
+#### Additional Options
+
+You can customize service behavior with optional fields.
+
+| Field | Description | Default |
+|-----------|-----------|-----------|
+| `timeout` | Time (with units, e.g., `24h`, `48h`) after which a service is considered unhealthy.         | `24h`      |
+| `enabled` | Set to `false` to temporarily disable monitoring for this service.                          | `true`     |
+| `status`  | HTTP status codes that indicate the service is healthy.                                     | `200`      |
+| `content` | Expected content in the response body (all values specified must be present).               | No checks  |
+
+
+The option `timeout` determines how long to consider a service healthy after a successful health check. It defaults to `24h` and needs to be specified with the unit included (`6h`, `24h`, `48h`, ...). For example, if a service has a timeout of 24 hours, it will be considered failed if it does not receive heartbeat for 24 hours.
+
+`timeout` does not override health checks. For example if your website responds with unexpected status code (e.g. 404, 5xx, depending on settings) it will be immediately considered failed even if the `timeout` period did not pass yet.
+
+### Email configuration
+
+Email notifications are optional but recommended for receiving health reports. Configure the email section in the config file with your SMTP server details. You can find many SMTP providers online, both paid and free.
+
+
+| Field          | Description                                         | Required | Example                         |
+|----------------|-----------------------------------------------------|----------|---------------------------------|
+| `smtp_server`  | Address of the SMTP server                          | Yes      | `smtp.gmail.com`               |
+| `smtp_port`    | SMTP port                                           | Yes      | `587`                          |
+| `smtp_username`| SMTP server username                                | Yes      | `your-email@gmail.com`         |
+| `smtp_password`| SMTP server password                                | Yes      | `your-password`                |
+| `send_to`      | Recipient email address                             | Yes      | `your-email@gmail.com`         |
+| `sender`       | Email address used as the sender                   | Yes      | `beacon@example.com`           |
+| `prefix`       | String prepended to email subject for easy filtering | No       | `[Production]`                 |
+
+Example:
+```yaml
+email:
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587
+  smtp_username: "your-email@gmail.com"
+  smtp_password: "your-password"
+  send_to: "your-email@gmail.com"
+  sender: "beacon@example.com"
+  prefix: "[Production]"
+```
+
+You can use **environment variables** instead. For example:
+```sh
+export BEACON_SMTP_PASSWORD="your-password"
+```
+
+### Configuration sources
+
+Beacon supports multiple configuration sources, with the following priority (highest to lowest):
+
+1. CLI Flags (e.g., `--config`)
+2. Environment Variables (e.g., `BEACON_SMTP_PASSWORD`)
+3. Configuration File (default: `~/beacon.yaml`)
+
+Environment variables use the prefix BEACON_ and replace dots (.) with underscores (_). For example, to override the smtp_port field in the email section:
+```sh
+export BEACON_EMAIL_SMTP_PORT=465
+```
+
+## API
+
+Beacon provides an HTTP API to interact with your monitored services. You can use the API to send heartbeats, retrieve service statuses, and integrate Beacon into your workflows.
+
+### Available endpoints
+
+| Endpoint     | Method     | Description    |
+|-----------|----------|---|
+| `/services/<id>/beat`  | POST  |  Send a heartbeat for a specific service.   | 
+| `/services/<id>/status` | GET |  Retrieve the latest health status of a service. |
+
+
+### Examples
+
+Send a Heartbeat:
+```sh
+curl -X POST http://localhost:8088/services/my-service-name/beat
+```
+Response:
+```sh
+my-service-name @ 2025-01-11T12:34:56Z
+```
+
+Get Service Status:
+```sh
+curl -X GET http://localhost:8088/services/my-service-name/status
+```
+Response:
+```sh
+my-service-name @ 2025-01-11T12:34:56Z
+```
+
+
+## Checking service status
+
+Beacon will automatically send you reports about your services.
+You can always check current status of your services on the web GUI, by default on [http://localhost:8088](localhost:8088).
+
+You can also check status of a specific service with the HTTP API or generate the full report via CLI. This enables you to build your own logic and reporting on top of Beacon as needed.
+
+```sh
+# view current status in your browser (default address)
+http://localhost:8088
+
 # use HTTP API (curl as an example, use anything you want)
 curl http://localhost:8088/services/my-service-name/status
 
@@ -56,119 +224,13 @@ beacon report
 beacon report --send-mail
 ```
 
-### Docker
-
-Beacon is available as a Docker container. `compose.yaml` is provided for convenience. Simply start it with:
-```sh
-# for persistent database you need to mount it inside `compose.yaml`
-docker compose up
-```
-
-For production usage you should mount your config file instead of `config.sample.yaml`.
-
-You can also use docker directly without compose:
-```sh
-docker build -t beacon .
-# add `-v $(pwd)/beacon.db:/root/beacon.db` if you want persist database
-docker run --rm -p 8080:8080 -v $(pwd)/config.sample.yaml:/root/beacon.yaml beacon start
-```
-
-## Configuration
-
-Configuration can be provided with CLI flags, environment variables and a config file. See [config.sample.yaml](config.sample.yaml) for example of a config file. By default the config file will be named `beacon.yaml` and located in your home directory (`~/beacon.yaml`). You can specify config file path with the `--config` CLI flag available for all commands.
-
-If no config file is found in the default location (and you don't specify it yourself) then a default config file will be created. You can modify
-the config file later as needed.
-
-CLI flags take precedence over environment variables, which take precedence over config file. Environment variables should start with prefix `BEACON_` and use underscores for hierarchy. For example, to overwrite value for `smtp_port` under `email` section you would set `BEACON_SMTP_PORT` env variable. Anything specified inside config file can be overwritten using env variables.
-
-### Service configuration
-
-You can specify services in the `services` section. Each entry should be a unique service name, optionally with more configuration.
-
-The minimal configuration for web services is just the `url` Beacon should check. The following example configures a service named `beacon-github`, that should be checked at the given url.
-
-```yaml
-services:
-  beacon-github:
-    url: "https://github.com/davidmasek/beacon"
-```
-
-If you're gonna provide service health info by sending heartbeats, no extra configuration is needed and you can specify only the service name as in the following example. Note that the line still ends with colon `:`, because it is a mapping of a name to a (in this case empty) configuration.
-
-```yaml
-services:
-  truly-minimal-config:
-```
-
-The option `timeout` determines how long to consider a service healthy after a successful health check. It defaults to `24h` and needs to be specified with the unit included (`6h`, `24h`, `48h`, ...). For example, if a service has a timeout of 24 hours, it will be considered failed if it does not receive heartbeat for 24 hours.
-
-`timeout` does not override health checks. For example if your website responds with unexpected status code (e.g. 404, 5xx, depending on settings) it will be immediately considered failed even if the `timeout` period did not pass yet.
-
-The following fields are currently relevant only to web services:
-- `url` - url to be periodically checked to determine service health
-- `enabled` - set to `false` to disable automatically checking the website url
-- `status` - HTTP status codes considered to be success (service healthy), defaults to 200
-- `content` - content expected in the body of the response. Defaults to no checks. If multiple values are specified all need to be present.
-
-### Email configuration
-
-To receive emails from Beacon you need to provide SMTP server configuration. SMTP is a standard for sending email. You can find many SMTP providers online, both paid and free.
-
-You can use Beacon without configuring email and use the web GUI, CLI or API to check status of your services.
-
-The section `email` has the following fields:
-- `smtp_server` - address of your SMTP server
-- `smtp_port`
-- `smtp_username`
-- `smtp_password`
-- `send_to` - your address where mail should be sent to
-- `sender` - email address marked as sender of the emails
-- `prefix` - any string, will be placed at start of the subject of each email. Useful to quickly differentiate different environments (I use it to separate dev/staging/prod).
-
-## API
-
-Beacon provides HTTP API to send and retrieve information about services.
-
-Available endpoints:
-
-|        Endpoint              |          Description          |
-|------------------------------|-------------------------------|
-| POST `/services/<id>/beat`   |  send heartbeat for service   | 
-| GET  `/services/<id>/status` |  get latest health check      |
-
-
-Examples:
-```sh
-❯ curl -X POST http://localhost:8088/services/sly-fox/beat
-sly-fox @ 2024-12-29T18:55:11Z
-❯ curl -X GET http://localhost:8088/services/sly-fox/status
-sly-fox @ 2024-12-29T18:55:11Z
-```
-
 ## Database
 
-Beacon uses `beacon.db` file inside your home directory to store it's data. You can specify different path using the `BEACON_DB` env variable.
+Beacon uses `beacon.db` file inside your home directory to store it's data. 
 
-## 🌐 Website flow
+You can specify different path using the `BEACON_DB` env variable.
 
-You have a website. You point Beacon to it. Beacon continually checks that it is online. If it's not running you get a notification. 
-
-🎉 That's it. You can now relax with the knowledge that everything is working.
-
-🔍 You can optionally receive periodic reports to be really sure all is well.
-
-🔍 This flow can also be used for other things than classic websites. Anything that can respond to HTTP GET requests goes.
-
-## ❤️ Heartbeat flow
-
-You have an application. You periodically notify Beacon that everything is good. If Beacon does not hear from the application for too long something is wrong and you get notified. 
-
-🎉 That's it. You can now relax with the knowledge that everything is working.
-
-🔍 You can optionally receive periodic reports to be really sure all is well.
-
-🔍 This flow can be used for anything that can send HTTP POST requests.
+If using Docker, mount the database file to persist data between container restarts.
 
 ## 🌟  Beacon status
 
