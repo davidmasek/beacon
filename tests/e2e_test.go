@@ -1,15 +1,16 @@
 package tests
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/davidmasek/beacon/conf"
 	"github.com/davidmasek/beacon/handlers"
+	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,7 +29,7 @@ func TestEndToEndHeartbeat(t *testing.T) {
 	db := setupDB(t)
 	defer db.Close()
 
-	service_name := "heartbeat-monitor"
+	serviceName := "heartbeat-monitor"
 
 	config := conf.NewConfig()
 	// shouldn't be fixed, but at least it's different than the default
@@ -44,20 +45,25 @@ func TestEndToEndHeartbeat(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	t.Log("Record heartbeat")
-	input := Post(fmt.Sprintf("/services/%s/beat", service_name), t, serverPort)
-	assert.Contains(t, input, service_name)
-	timestampIn := strings.Split(input, " ")[2]
+	var heartbeatResponse monitor.HeartbeatResponse
+	input := Post(fmt.Sprintf("/services/%s/beat", serviceName), t, serverPort)
+	err = json.Unmarshal([]byte(input), &heartbeatResponse)
+	require.NoError(t, err, "Failed to parse JSON response")
+	assert.Equal(t, serviceName, heartbeatResponse.ServiceId, "Service ID does not match")
+	timestampIn := heartbeatResponse.Timestamp
 
 	t.Log("Retrieve heartbeat status")
-	output := Get(fmt.Sprintf("/services/%s/status", service_name), t, serverPort)
-	assert.Contains(t, output, service_name)
-	timestampOut := strings.Split(output, " ")[2]
-	assert.Equal(t, timestampIn, timestampOut)
+	output := Get(fmt.Sprintf("/services/%s/status", serviceName), t, serverPort)
+	var statusResponse monitor.StatusResponse
+	err = json.Unmarshal([]byte(output), &statusResponse)
+	require.NoError(t, err, "Failed to parse JSON response")
+	assert.Equal(t, serviceName, statusResponse.ServiceId, "Service ID does not match")
+	assert.Equal(t, timestampIn, statusResponse.Timestamp, "Timestamps do not match")
 
 	t.Log("Check web UI")
 	html := Get("/", t, serverPort)
 	assert.Contains(t, html, "<html")
-	assert.Contains(t, html, service_name)
+	assert.Contains(t, html, serviceName)
 }
 
 // TODO: could replace with resty ?

@@ -189,8 +189,11 @@ Send a Heartbeat:
 curl -X POST http://localhost:8088/services/my-service-name/beat
 ```
 Response:
-```sh
-my-service-name @ 2025-01-11T12:34:56Z
+```json
+{
+  "service_id": "my-service-name",
+  "timestamp": "2025-01-11T17:20:09Z"
+}
 ```
 
 Get Service Status:
@@ -198,8 +201,11 @@ Get Service Status:
 curl -X GET http://localhost:8088/services/my-service-name/status
 ```
 Response:
-```sh
-my-service-name @ 2025-01-11T12:34:56Z
+```json
+{
+  "service_id": "my-service-name",
+  "timestamp": "2025-01-11T17:20:09Z"
+}
 ```
 
 
