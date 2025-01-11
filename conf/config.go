@@ -18,6 +18,22 @@ import (
 // prefix for environment variables
 const ENV_VAR_PREFIX = "BEACON_"
 
+type Secret struct {
+	value string
+}
+
+func (s Secret) String() string {
+	return "*****"
+}
+
+func (s Secret) GoString() string {
+	return "Secret{*****}"
+}
+
+func (s *Secret) Get() string {
+	return s.value
+}
+
 type Config struct {
 	envPrefix string
 	parents   []string
@@ -26,7 +42,22 @@ type Config struct {
 	overrides map[string]interface{}
 }
 
+func (s Config) String() string {
+	// todo: should actually print something useful,
+	// but at least this does not leak secrets
+	return fmt.Sprintf("BeaconConfig%s", s.parents)
+}
+
+func (s Config) GoString() string {
+	return "Config{*****}"
+}
+
 func (config *Config) AllSettings() map[string]interface{} {
+	// todo: does not use overrides
+	// - this is OK for the current use-case but terrible
+	// if used in other ways
+	// - Config needs refactor anyway, so not dealing with this now
+	// - probably the whole method should be removed in future
 	settings := config.settings
 	for _, parent := range config.parents {
 		if settings == nil {
@@ -303,6 +334,16 @@ func setupConfig(configFile string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	// todo: improve; quick hack to hide SMTP password in logging
+	if config.IsSet("email") {
+		emailConfig := config.Sub("email")
+		if emailConfig.IsSet("smtp_password") {
+			config.settings["email"].(map[string]any)["smtp_password"] = Secret{
+				value: emailConfig.GetString("smtp_password"),
+			}
+		}
+	}
+
 	log.Println(">>>>", config, "<<<<")
 	return config, err
 }
