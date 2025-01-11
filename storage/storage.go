@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -330,6 +331,7 @@ func InitDB(dbPath string) (Storage, error) {
 		}
 		dbPath = filepath.Join(homedir, "beacon.db")
 	}
+	log.Println("DB path:", dbPath)
 	db, err := NewSQLStorage(dbPath)
 	if err != nil {
 		return nil, err

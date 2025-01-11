@@ -133,6 +133,9 @@ func (config *Config) get(key string) interface{} {
 
 func (config *Config) GetString(key string) string {
 	val := config.get(key)
+	if val == nil {
+		return ""
+	}
 	strVal, ok := val.(string)
 	if ok {
 		return strVal
