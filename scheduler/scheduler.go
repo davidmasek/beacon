@@ -16,12 +16,12 @@ func ShouldCheckWebServices(db storage.Storage, config *conf.Config, now time.Ti
 	return true
 }
 
-func CheckWebServices(db storage.Storage, services map[string]*conf.ServiceConfig) error {
+func CheckWebServices(db storage.Storage, services []conf.ServiceConfig) error {
 	// TODO: using "legacy" approach to get this done quickly
 	// should look into monitor.CheckWebsites refactor
 	// and getting rid of WebConfig struct
 	websites := make(map[string]monitor.WebConfig)
-	for serviceId, service := range services {
+	for _, service := range services {
 		// skip disabled
 		if !service.Enabled {
 			continue
@@ -31,7 +31,7 @@ func CheckWebServices(db storage.Storage, services map[string]*conf.ServiceConfi
 			continue
 		}
 
-		websites[serviceId] = monitor.WebConfig{
+		websites[service.Id] = monitor.WebConfig{
 			Url:         service.Url,
 			HttpStatus:  service.HttpStatus,
 			BodyContent: service.BodyContent,
@@ -103,12 +103,8 @@ func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 
 	var err error = nil
 	if ShouldCheckWebServices(db, config, now) {
-		services, err := conf.ParseServicesConfig(config.Sub("services"))
-		if err != nil {
-			return err
-		}
 		log.Println("Checking web services...")
-		err = CheckWebServices(db, services)
+		err = CheckWebServices(db, config.Services())
 		// TODO: might want to continue on error here
 		if err != nil {
 			return err

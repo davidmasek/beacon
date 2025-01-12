@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
-	"sort"
 
+	"github.com/davidmasek/beacon/conf"
 	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
 )
@@ -16,14 +16,8 @@ import (
 var TEMPLATES embed.FS
 
 // Show services status
-func handleIndex(db storage.Storage) http.HandlerFunc {
+func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		serviceNames, err := db.ListServices()
-		if err != nil {
-			http.Error(w, "Failed to fetch services", http.StatusInternalServerError)
-			return
-		}
-
 		// Prepare a map to hold services and their heartbeats
 		type ServiceStatus struct {
 			// Needed as HealthCheck can be nil
@@ -33,8 +27,9 @@ func handleIndex(db storage.Storage) http.HandlerFunc {
 		}
 		var services []ServiceStatus
 		serviceChecker := DefaultServiceChecker()
-		for _, serviceId := range serviceNames {
-			healthCheck, err := db.LatestHealthCheck(serviceId)
+		for _, serviceCfg := range config.Services() {
+			log.Println("Querying", serviceCfg.Id)
+			healthCheck, err := db.LatestHealthCheck(serviceCfg.Id)
 			if err != nil {
 				log.Printf("Failed to load health check: %s", err)
 				http.Error(w, "Failed to load health check", http.StatusInternalServerError)
@@ -50,16 +45,11 @@ func handleIndex(db storage.Storage) http.HandlerFunc {
 
 			// Add service and its heartbeats to the list
 			services = append(services, ServiceStatus{
-				ServiceId:         serviceId,
+				ServiceId:         serviceCfg.Id,
 				LatestHealthCheck: healthCheck,
 				CurrentStatus:     serviceStatus,
 			})
 		}
-
-		// Sort services alphabetically (optional, already done by SQL, kept for future use/changes)
-		sort.Slice(services, func(i, j int) bool {
-			return services[i].LatestHealthCheck.ServiceId < services[j].LatestHealthCheck.ServiceId
-		})
 
 		hasMetadata := func(hc *storage.HealthCheck) bool {
 			return hc != nil && len(hc.Metadata) > 0
@@ -79,7 +69,7 @@ func handleIndex(db storage.Storage) http.HandlerFunc {
 
 		tmpl := template.New("index.html").Funcs(funcMap)
 		path := filepath.Join("templates", "index.html")
-		tmpl, err = tmpl.ParseFS(TEMPLATES, path)
+		tmpl, err := tmpl.ParseFS(TEMPLATES, path)
 		if err != nil {
 			log.Printf("Error parsing template: %v", err)
 			http.Error(w, "Failed to render page", http.StatusInternalServerError)
