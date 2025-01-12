@@ -39,19 +39,10 @@ beacon start --config config.sample.yaml
 
 ### Docker
 
-Beacon is also available as a Docker container. [`compose.yaml`](./compose.yaml) is provided for convenience. Simply start Docker with:
+Beacon is also available as a Docker container. [`compose.yaml`](./compose.yaml) provides an example of using it with Docker Compose and latest image available from [Docker Hub](https://hub.docker.com/r/davidmasek42/beacon).
+
 ```sh
-# mount your database inside `compose.yaml` to persist data
 docker compose up
-```
-
-For production usage you should mount your config file instead of [`config.sample.yaml`](./config.sample.yaml).
-
-You can also use docker directly without compose:
-```sh
-docker build -t beacon .
-# add `-v $(pwd)/beacon.db:/root/beacon.db` to persist the database
-docker run --rm -p 8080:8080 -v $(pwd)/config.sample.yaml:/root/beacon.yaml beacon start
 ```
 
 ## 🔧 Configuration
