@@ -4,7 +4,7 @@
 
 **Monitor your websites and periodic jobs with ease.**  
 
-Beacon tracks the health of your websites, servers, and applications, ensuring that everything runs as it should.
+Beacon tracks the health of your websites, servers, and applications, so you know that everything runs as it should.
 
 You can use Beacon to:
 - Automatically check website availability and content.
@@ -80,12 +80,6 @@ services:
 ```yaml
 services:
   nightly-backup:
-```
-
-**Applications.** Anything than can send HTTP POST request works.
-```yaml
-services:
-  app-server:
 ```
 
 ### Service configuration
@@ -211,8 +205,7 @@ Response:
 
 ## Checking service status
 
-Beacon will automatically send you reports about your services.
-You can always check current status of your services on the web GUI, by default on [http://localhost:8088](localhost:8088).
+Beacon will automatically send you reports about your services. You can always check current status of your services on the web GUI, by default on [http://localhost:8088](http://localhost:8088).
 
 You can also check status of a specific service with the HTTP API or generate the full report via CLI. This enables you to build your own logic and reporting on top of Beacon as needed.
 
@@ -256,9 +249,7 @@ go build
 
 ## 🔬  Test
 
-The Go tests are intended as the main testing component. They should run fast so you can
-iterate quickly during development. They should cover main functionality (server, CLI, reporting, ...), including
-reasonable fail scenarios (incorrect requests, config, ...).
+The Go tests are intended as the main testing component. They should run fast so you can iterate quickly during development. They should cover main functionality (server, CLI, reporting, ...), including reasonable fail scenarios (incorrect requests, config, ...).
 
 Run Go tests:
 ```sh
