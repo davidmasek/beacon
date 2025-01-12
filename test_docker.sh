@@ -8,16 +8,17 @@ set -o pipefail  # Fail if any part of a pipeline fails
 echo "Starting Beacon test."
 echo "---------------------"
 
-DOCKER_BUILDKIT=1 docker compose build beacon
-echo "Build successful."
-echo "-----------------"
+echo "Building Docker image..."
+echo "---------------------"
+DOCKER_BUILDKIT=1 docker build -t beacon-test .
 
 # try to read env file, but ignore it if it does not exist
 # in CI the env will be set without this file
-source ~/beacon.github.env || true
+source ~/beacon.github.env || echo "Ignore missing file in CI"
 
-docker compose run --rm \
- -T \
+echo "Running test..."
+echo "---------------------"
+docker run --rm \
  --entrypoint bash \
  -e BEACON_EMAIL_SMTP_SERVER=${BEACON_EMAIL_SMTP_SERVER} \
  -e BEACON_EMAIL_SMTP_PORT=${BEACON_EMAIL_SMTP_PORT} \
@@ -26,7 +27,7 @@ docker compose run --rm \
  -e BEACON_EMAIL_SEND_TO=${BEACON_EMAIL_SEND_TO} \
  -e BEACON_EMAIL_SENDER=${BEACON_EMAIL_SENDER} \
  -e BEACON_EMAIL_PREFIX='[staging]' \
- beacon -c '
+ beacon-test -c '
 set -e
 /app/beacon start &
 echo "executing POST"

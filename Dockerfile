@@ -1,18 +1,36 @@
-FROM golang:1.23
+# Stage 1: Builder
+# -----------------------------------
+FROM golang:1.23 AS builder
 
-WORKDIR /app
+WORKDIR /src
 
 ENV GOCACHE=/root/.cache/go-build
 ENV GOMODCACHE=/root/go/pkg/mod
 
-# pre-copy/cache go.mod for pre-downloading dependencies and only re-downloading them in subsequent builds if they change
 COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/root/go/pkg/mod \
     go mod download && go mod verify
 
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/go-build \
-    go build
+    go build -o /app/beacon
 
-ENTRYPOINT ["./beacon"]
-CMD ["start"]
+# Stage 2: Main
+# -----------------------------------
+FROM debian:bookworm-slim AS main
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY --from=builder /app/beacon /app/beacon
+
+WORKDIR /app
+
+ENV BEACON_DB=/app/beacon.db
+
+ENTRYPOINT ["/app/beacon"]
+CMD ["start", "--config", "/app/beacon.yaml"]
