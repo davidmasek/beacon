@@ -14,8 +14,10 @@ func TestLoadExampleConfig(t *testing.T) {
 	config, err := DefaultConfigFrom(configFile)
 	require.NoError(t, err)
 
-	services, err := ParseServicesConfig(config.Sub("services"))
-	require.NoError(t, err)
+	services := map[string]ServiceConfig{}
+	for _, cfg := range config.services {
+		services[cfg.Id] = cfg
+	}
 
 	// TODO: these are in the wrong order
 	// should be "expected", "actual"

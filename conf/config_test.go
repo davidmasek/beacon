@@ -41,6 +41,41 @@ func TestEnvVariablesOverwrite(t *testing.T) {
 	assert.Equal(t, 123, emailConfig.GetInt("smtp_port"), emailConfig)
 }
 
+func TestUnmarshal(t *testing.T) {
+	config := NewConfig()
+	data := []byte(`
+services:
+  foo:
+  bar:
+    enabled: true
+
+email:
+  user: david
+
+testing: true`)
+	err := yaml.Unmarshal(data, config)
+	require.NoError(t, err)
+}
+
+func TestParsingKeepsOrder(t *testing.T) {
+	expectedNames := []string{"foo", "bar", "third", "last"}
+	data := []byte(`
+services:
+  foo:
+  bar:
+  third:
+    url: ""
+  last:`)
+	config, err := ConfigFromBytes(data)
+	require.NoError(t, err)
+	services := config.Services()
+	names := []string{}
+	for _, service := range services {
+		names = append(names, service.Id)
+	}
+	require.Equal(t, expectedNames, names)
+}
+
 func TestConfigGet(t *testing.T) {
 	config := NewConfig()
 	data := `

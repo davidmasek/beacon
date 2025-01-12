@@ -3,6 +3,8 @@ package conf
 import (
 	"fmt"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 type ServiceConfig struct {
@@ -26,7 +28,7 @@ func defaultServiceConfig(id string) *ServiceConfig {
 	}
 }
 
-func NewServiceConfig(id string, input map[string]interface{}) (*ServiceConfig, error) {
+func NewServiceConfig(id string, input map[string]any) (*ServiceConfig, error) {
 	service := defaultServiceConfig(id)
 	if input == nil {
 		return service, nil
@@ -108,22 +110,27 @@ func (sc *ServiceConfig) IsWebService() bool {
 	return sc.Url != ""
 }
 
-func ParseServicesConfig(servicesConfig *Config) (map[string]*ServiceConfig, error) {
-	inputs := servicesConfig.AllSettings()
+func parseServicesConfig(node *yaml.Node) ([]ServiceConfig, error) {
+	if node.Kind != yaml.MappingNode {
+		return nil, fmt.Errorf("expected a mapping node, got %v", node.Kind)
+	}
+	services := []ServiceConfig{}
 
-	services := make(map[string]*ServiceConfig)
-	for id, rawInput := range inputs {
-		input, ok := rawInput.(map[string]interface{})
-		// TODO: is this the correct check for empty values?
-		if !ok {
-			input = make(map[string]interface{})
-		}
-		serviceConfig, err := NewServiceConfig(id, input)
+	for i := 0; i < len(node.Content); i += 2 {
+		keyNode := node.Content[i]
+		valueNode := node.Content[i+1]
+
+		input := map[string]any{}
+		err := valueNode.Decode(input)
 		if err != nil {
 			return nil, err
 		}
-		services[id] = serviceConfig
+
+		serviceConfig, err := NewServiceConfig(keyNode.Value, input)
+		if err != nil {
+			return nil, err
+		}
+		services = append(services, *serviceConfig)
 	}
 	return services, nil
-
 }

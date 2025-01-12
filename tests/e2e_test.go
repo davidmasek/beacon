@@ -30,8 +30,12 @@ func TestEndToEndHeartbeat(t *testing.T) {
 	defer db.Close()
 
 	serviceName := "heartbeat-monitor"
+	serviceNameSecond := "example-without-heartbeat"
 
-	config := conf.NewConfig()
+	config, err := conf.ConfigFromBytes([]byte(
+		"services:\n  heartbeat-monitor:\n  example-without-heartbeat:"))
+	require.NoError(t, err)
+
 	// shouldn't be fixed, but at least it's different than the default
 	serverPort := "9000"
 	config.Set("port", serverPort)
@@ -64,6 +68,7 @@ func TestEndToEndHeartbeat(t *testing.T) {
 	html := Get("/", t, serverPort)
 	assert.Contains(t, html, "<html")
 	assert.Contains(t, html, serviceName)
+	assert.Contains(t, html, serviceNameSecond)
 }
 
 // TODO: could replace with resty ?

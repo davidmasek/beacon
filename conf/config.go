@@ -35,6 +35,8 @@ func (s *Secret) Get() string {
 }
 
 type Config struct {
+	services []ServiceConfig
+
 	envPrefix string
 	parents   []string
 	settings  map[string]interface{}
@@ -50,6 +52,10 @@ func (s Config) String() string {
 
 func (s Config) GoString() string {
 	return "Config{*****}"
+}
+
+func (s Config) Services() []ServiceConfig {
+	return s.services
 }
 
 func (config *Config) AllSettings() map[string]interface{} {
@@ -311,13 +317,14 @@ func DefaultConfigFrom(configFile string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	return setupConfig(configFile)
+	return configFromFile(configFile)
 }
 
 // Empty config
 func NewConfig() *Config {
 	config := &Config{
 		envPrefix: ENV_VAR_PREFIX,
+		services:  []ServiceConfig{},
 		parents:   []string{},
 		settings:  make(map[string]interface{}),
 		overrides: make(map[string]interface{}),
@@ -325,15 +332,39 @@ func NewConfig() *Config {
 	return config
 }
 
-// Setup config to use ENV variables and read specified config file.
-func setupConfig(configFile string) (*Config, error) {
-	log.Printf("reading config from %q\n", configFile)
-	data, err := os.ReadFile(configFile)
-	if err != nil {
-		return nil, err
+func (config *Config) UnmarshalYAML(value *yaml.Node) error {
+	if value.Kind != yaml.MappingNode {
+		return fmt.Errorf("expected a mapping node, got %v", value.Kind)
 	}
+
+	for i := 0; i < len(value.Content); i += 2 {
+		keyNode := value.Content[i]
+		valueNode := value.Content[i+1]
+
+		// Access the key and value
+		key := keyNode.Value
+		fmt.Printf("Key: %s\n", key)
+
+		var err error
+		switch key {
+		case "services":
+			config.services, err = parseServicesConfig(valueNode)
+			if err != nil {
+				return err
+			}
+		default:
+			fmt.Printf("Unexpected key %v\n", key)
+		}
+	}
+
+	// TODO: use structured Config; currently quick "fix" to keep legacy code working
+	err := value.Decode(config.settings)
+	return err
+}
+
+func ConfigFromBytes(data []byte) (*Config, error) {
 	config := NewConfig()
-	err = yaml.Unmarshal(data, config.settings)
+	err := yaml.Unmarshal(data, config)
 	if err != nil {
 		return nil, err
 	}
@@ -346,7 +377,15 @@ func setupConfig(configFile string) (*Config, error) {
 			}
 		}
 	}
-
 	log.Println(">>>>", config, "<<<<")
 	return config, err
+}
+
+func configFromFile(configFile string) (*Config, error) {
+	log.Printf("reading config from %q\n", configFile)
+	data, err := os.ReadFile(configFile)
+	if err != nil {
+		return nil, err
+	}
+	return ConfigFromBytes(data)
 }
