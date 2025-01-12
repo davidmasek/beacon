@@ -1,6 +1,6 @@
 services:
-  example-heartbeat-service:
-  example-web-service:
+  example-backup-job:
+  example-website:
     url: ""
 
 email:

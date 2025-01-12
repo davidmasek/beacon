@@ -6,6 +6,5 @@ services:
     ports:
       - "8088:8088" # web GUI + API
     volumes:
-      - ./config.sample.yaml:/root/beacon.yaml # config file
-      # Uncomment following line to persist DB
-      # - ./beacon.db:/root/beacon.db
+      - ./beacon.yaml:/app/beacon.yaml # config file
+      - ./beacon.db:/app/beacon.db # persist DB

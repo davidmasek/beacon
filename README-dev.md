@@ -4,9 +4,6 @@ This documents describes some internals, implementation details, and tries it's 
 
 You should start with the main [README](README.md).
 
-TODO: json API responses
-TODO: deploy and try how it works
-TODO: 
 
 ## 🚧 Feature list:
 - 🟢 heartbeat listener
@@ -53,6 +50,7 @@ TODO:
   - 🟢 main documentation done
   - 🟡 needs some user-testing to make sure it makes sense
   - 🟤 later: swagger API docs?
+  - 🟡 docker + dockerhub
 - 🟢 notifications
   - 🟢 email reporting
   - 🟢 local HTML report
@@ -76,7 +74,7 @@ TODO:
     - it might be good to not rely on external websites for unit testing, but not sure if it's worth it
       - https://pkg.go.dev/testing#hdr-Main
       - or just setup/teardown where needed...
-  - 
+  - 🟡 TODO: look into code coverage
 
 
 
