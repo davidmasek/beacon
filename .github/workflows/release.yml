@@ -61,5 +61,5 @@ jobs:
         push: true
         file: ./Dockerfile
         tags: |
-          davidmasek/beacon:latest
-          davidmasek/beacon:${{ github.ref_name }}
+          davidmasek42/beacon:latest
+          davidmasek42/beacon:${{ github.ref_name }}
