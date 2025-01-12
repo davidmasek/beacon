@@ -1,8 +1,6 @@
 services:
   beacon:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: davidmasek42/beacon:latest
     ports:
       - "8088:8088" # web GUI + API
     volumes:
