@@ -16,6 +16,7 @@ import (
 
 func TestRunSingle(t *testing.T) {
 	db := storage.NewTestDb(t)
+	defer db.Close()
 	config, err := conf.ExampleConfig()
 	require.NoError(t, err)
 
