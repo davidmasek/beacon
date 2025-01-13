@@ -41,6 +41,50 @@ func TestRunSingle(t *testing.T) {
 	// TODO: check service appears in HTML
 }
 
+func TestSentinelCreatedOnlyOnce(t *testing.T) {
+	db := storage.NewTestDb(t)
+	defer db.Close()
+
+	task, err := db.LatestTaskLog("report")
+	require.NoError(t, err)
+	require.Nil(t, task)
+
+	now := time.Now()
+	later := now.Add(time.Hour)
+	err = InitializeSentinel(db, now)
+	require.NoError(t, err)
+	task, err = db.LatestTaskLog("report")
+	require.NoError(t, err)
+	require.WithinDuration(t, now, task.Timestamp, time.Second)
+
+	err = InitializeSentinel(db, later)
+	require.NoError(t, err)
+	task, err = db.LatestTaskLog("report")
+	require.NoError(t, err)
+	require.WithinDuration(t, now, task.Timestamp, time.Second)
+}
+
+func TestSentinelCreatedOnlyIfNeeded(t *testing.T) {
+	db := storage.NewTestDb(t)
+	defer db.Close()
+
+	now := time.Now()
+	later := now.Add(time.Hour)
+	taskStatus := "test"
+
+	err := db.CreateTaskLog(storage.TaskInput{
+		TaskName: "report", Status: taskStatus, Timestamp: now, Details: ""})
+	require.NoError(t, err)
+
+	err = InitializeSentinel(db, later)
+	require.NoError(t, err)
+
+	task, err := db.LatestTaskLog("report")
+	require.NoError(t, err)
+	require.NotNil(t, task)
+	require.Equal(t, taskStatus, task.Status)
+}
+
 func TestNextReportTime(t *testing.T) {
 	config := conf.NewConfig()
 	config.ReportAfter = 10

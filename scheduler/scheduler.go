@@ -53,7 +53,15 @@ func NextReportTime(config *conf.Config, lastReportTime time.Time) time.Time {
 
 // Add placeholder (sentinel) "report" task to bootstrap calculation of next report time.
 func InitializeSentinel(db storage.Storage, now time.Time) error {
-	err := db.CreateTaskLog(storage.TaskInput{
+	task, err := db.LatestTaskLog("report")
+	if err != nil {
+		return err
+	}
+	// skip creation if any value already exists
+	if task != nil {
+		return nil
+	}
+	err = db.CreateTaskLog(storage.TaskInput{
 		TaskName: "report", Status: string(handlers.TASK_SENTINEL), Timestamp: now, Details: ""})
 	return err
 }
