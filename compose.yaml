@@ -4,5 +4,6 @@ services:
     ports:
       - "8088:8088" # web GUI + API
     volumes:
+      # make sure both files exist, otherwise docker will not mount them correctly
       - ./beacon.yaml:/app/beacon.yaml # config file
       - ./beacon.db:/app/beacon.db # persist DB
