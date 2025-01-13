@@ -118,8 +118,10 @@ func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 // Will not call run next job again until previous one returns, even
 // if specified interval passes.
 func Start(ctx context.Context, db storage.Storage, config *conf.Config) {
+	// TODO: add to config, minute only input seems OK
 	config.SetDefault("SCHEDULER_PERIOD", "15m")
 	checkInterval := config.GetDuration("SCHEDULER_PERIOD")
+	InitializeSentinel(db, time.Now())
 	log.Printf("Starting scheduler: run each %s\n", checkInterval)
 	startFunction(ctx, checkInterval, func(now time.Time) error {
 		return RunSingle(db, config, now)
