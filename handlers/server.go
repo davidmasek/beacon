@@ -14,6 +14,7 @@ func StartServer(db storage.Storage, config *conf.Config) (*http.Server, error) 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/{$}", handleIndex(db, config))
+	mux.HandleFunc("/about", handleAbout(db, config))
 
 	monitor.RegisterHeartbeatHandlers(db, mux)
 	// TODO: centralize defaults

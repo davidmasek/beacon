@@ -35,6 +35,8 @@ func (s *Secret) Get() string {
 }
 
 type Config struct {
+	Timezone time.Location
+
 	services []ServiceConfig
 
 	envPrefix string
@@ -323,6 +325,7 @@ func DefaultConfigFrom(configFile string) (*Config, error) {
 // Empty config
 func NewConfig() *Config {
 	config := &Config{
+		Timezone:  *time.Local,
 		envPrefix: ENV_VAR_PREFIX,
 		services:  []ServiceConfig{},
 		parents:   []string{},

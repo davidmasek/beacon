@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beacon: About</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .block {
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .block h2 {
+            margin: 0 0 10px;
+            font-size: 1.5rem;
+        }
+        .block p {
+            margin: 5px 0;
+        }
+        .block a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .block a:hover {
+            text-decoration: underline;
+        }
+        .time-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .time-info .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .time-info .row:last-child {
+            border-bottom: none;
+        }
+        .time-info .label {
+            font-weight: bold;
+            color: #555;
+            flex: 1;
+            max-width: 40%;
+        }
+        .time-info .value {
+            color: #333;
+            flex: 2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Beacon: About</h1>
+    <div class="container">
+        <!-- Site Info Block -->
+        <div class="block">
+            <h2>Beacon</h2>
+            <p>Beacon tracks the health of your projects.</p>
+            <p><a href="https://github.com/davidmasek/beacon" target="_blank">View on GitHub</a></p>
+        </div>
+
+        <!-- Time Info Block -->
+        <div class="block time-info">
+            <div class="row">
+                <span class="label">Last Report:</span>
+                <span class="value">{{ .lastReportTime }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Current Time:</span>
+                <span class="value">{{ .serverTime }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Next Report:</span>
+                <span class="value">{{ .nextReportTime }}</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
