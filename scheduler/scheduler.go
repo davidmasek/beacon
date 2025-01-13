@@ -40,17 +40,6 @@ func CheckWebServices(db storage.Storage, services []conf.ServiceConfig) error {
 	return monitor.CheckWebsites(db, websites)
 }
 
-// Calculate when the next report should happen based on last report time.
-// No previous reports or failed reporting tasks are not considered here.
-// See `ShouldReport` for more complex logic.
-func NextReportTime(config *conf.Config, lastReportTime time.Time) time.Time {
-	nextReportDay := lastReportTime.Add(24 * time.Hour)
-	nextReportTime := time.Date(
-		nextReportDay.Year(), nextReportDay.Month(), nextReportDay.Day(),
-		config.ReportAfter, 0, 0, 0, nextReportDay.Location())
-	return nextReportTime
-}
-
 // Add placeholder (sentinel) "report" task to bootstrap calculation of next report time.
 func InitializeSentinel(db storage.Storage, now time.Time) error {
 	task, err := db.LatestTaskLog("report")
@@ -84,7 +73,7 @@ func ShouldReport(db storage.Storage, config *conf.Config, query time.Time) (boo
 		return true, nil
 	}
 
-	nextReportTime := NextReportTime(config, task.Timestamp)
+	nextReportTime := handlers.NextReportTime(config, task.Timestamp)
 	isAfter := query.After(nextReportTime)
 	return isAfter, nil
 }

@@ -2,7 +2,6 @@ package scheduler
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -83,19 +82,6 @@ func TestSentinelCreatedOnlyIfNeeded(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, task)
 	require.Equal(t, taskStatus, task.Status)
-}
-
-func TestNextReportTime(t *testing.T) {
-	config := conf.NewConfig()
-	config.ReportAfter = 10
-	timezone, err := time.LoadLocation("America/New_York")
-	require.NoError(t, err)
-	config.Timezone = *timezone
-
-	now := time.Now()
-	next := NextReportTime(config, now)
-	assert.Equal(t, 10, next.Hour())
-	assert.Equal(t, now.In(timezone).Day()+1, next.Day(), fmt.Sprintf("now: %s, next: %s\n", now, next))
 }
 
 func TestShouldReport(t *testing.T) {

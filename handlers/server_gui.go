@@ -108,15 +108,39 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 		}
 
 		timeFormat := "15:04 Monday 02 January"
-		lastReportTime := "never"
+		lastReport, err := db.LatestTaskLog("report")
+		if err != nil {
+			log.Println("DB error", err)
+			http.Error(w, "Server error, please try again later", http.StatusInternalServerError)
+			return
+		}
+		var lastReportTime, nextReportAfter string
+		if lastReport == nil {
+			lastReportTime = "never"
+			nextReportAfter = "error"
+			log.Println("DB not properly initialized! No report task found")
+		} else if lastReport.Status == string(TASK_SENTINEL) {
+			lastReportTime = "never"
+			nextReportAfter = NextReportTime(config, lastReport.Timestamp).
+				In(&config.Timezone).Format(timeFormat)
+		} else {
+			lastReportTime = lastReport.Timestamp.In(&config.Timezone).Format(timeFormat)
+			nextReportAfter = NextReportTime(config, lastReport.Timestamp).
+				In(&config.Timezone).Format(timeFormat)
+		}
 		serverTime := time.Now().In(&config.Timezone).Format(timeFormat)
-		nextReportAfter := "TODO"
+
+		zone, offset := time.Now().In(&config.Timezone).Zone()
 
 		err = tmpl.Execute(w, map[string]any{
-			"lastReportTime": lastReportTime,
-			"serverTime":     serverTime,
-			"nextReportTime": nextReportAfter,
-			"CurrentPage":    "about",
+			"lastReportTime":        lastReportTime,
+			"serverTime":            serverTime,
+			"nextReportTime":        nextReportAfter,
+			"ReportAfter":           config.ReportAfter,
+			"CurrentPage":           "about",
+			"Timezone":              config.Timezone.String(),
+			"TimezoneAlt":           zone,
+			"TimezoneOffsetMinutes": offset / 60,
 		})
 		if err != nil {
 			log.Println("Failed to render", err)

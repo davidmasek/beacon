@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/davidmasek/beacon/conf"
 	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/stretchr/testify/assert"
@@ -79,4 +81,18 @@ func TestWriteReport(t *testing.T) {
 		expected := expectedStatusFromName(t, serviceId)
 		assert.Equal(t, expected, reported)
 	}
+}
+
+func TestNextReportTime(t *testing.T) {
+	config := conf.NewConfig()
+	config.ReportAfter = 10
+	timezone, err := time.LoadLocation("America/New_York")
+	// timezone, err := time.LoadLocation("")
+	require.NoError(t, err)
+	config.Timezone = *timezone
+
+	now := time.Now()
+	next := NextReportTime(config, now).In(timezone)
+	assert.Equal(t, 10, next.Hour(), next.In(time.UTC))
+	assert.Equal(t, now.In(timezone).Day()+1, next.Day(), fmt.Sprintf("now: %s, next: %s\n", now, next))
 }

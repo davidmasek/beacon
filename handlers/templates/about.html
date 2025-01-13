@@ -23,29 +23,39 @@
         .block a:hover {
             text-decoration: underline;
         }
-        .time-info {
+        .rows {
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
-        .time-info .row {
+        .rows .row {
             display: flex;
             justify-content: space-between;
             padding: 10px;
             border-bottom: 1px solid #ddd;
         }
-        .time-info .row:last-child {
+        .rows .row:last-child {
             border-bottom: none;
         }
-        .time-info .label {
+        .rows .label {
             font-weight: bold;
             color: #555;
+        }
+        .rows .value {
+            color: #333;
+        }
+        .rows-short-labels .label {
             flex: 1;
             max-width: 40%;
         }
-        .time-info .value {
-            color: #333;
+        .rows-short-labels .value {
             flex: 2;
+        }
+        .rows-long-labels .label {
+            flex: 1;
+        }
+        .rows-long-labels .value {
+            flex: 1;
         }
     </style>
 </head>
@@ -60,7 +70,7 @@
         </div>
 
         <!-- Time Info Block -->
-        <div class="block time-info">
+        <div class="block rows rows-short-labels">
             <div class="row">
                 <span class="label">Last Report:</span>
                 <span class="value">{{ .lastReportTime }}</span>
@@ -72,6 +82,28 @@
             <div class="row">
                 <span class="label">Next Report:</span>
                 <span class="value">{{ .nextReportTime }}</span>
+            </div>
+        </div>
+
+
+        <!-- Configuration Block -->
+        <div class="block rows rows-long-labels">
+            <h2>Config</h2>
+            <div class="row">
+                <span class="label">ReportAfter:</span>
+                <span class="value">{{ .ReportAfter }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Timezone:</span>
+                <span class="value">{{ .Timezone }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Timezone (alt name):</span>
+                <span class="value">{{ .TimezoneAlt }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Timezone offset (minutes)</span>
+                <span class="value">{{ .TimezoneOffsetMinutes }}</span>
             </div>
         </div>
     </div>
