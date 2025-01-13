@@ -40,62 +40,45 @@ func CheckWebServices(db storage.Storage, services []conf.ServiceConfig) error {
 	return monitor.CheckWebsites(db, websites)
 }
 
-func abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
+// Calculate when the next report should happen based on last report time.
+// No previous reports or failed reporting tasks are not considered here.
+// See `ShouldReport` for more complex logic.
+func NextReportTime(config *conf.Config, lastReportTime time.Time) time.Time {
+	nextReportDay := lastReportTime.Add(24 * time.Hour)
+	nextReportTime := time.Date(
+		nextReportDay.Year(), nextReportDay.Month(), nextReportDay.Day(),
+		config.ReportAfter, 0, 0, 0, nextReportDay.Location())
+	return nextReportTime
 }
 
-// Decide if report should be generated and send at given time `query`
-//
-// Config: REPORT_TIME
-// Acceptable format is RFC3339
-// For example:
-// - 2024-12-29T13:31:28Z
-// - 2024-12-29T14:31:26+01:00
-// - 2024-12-29T05:31:26-08:00
-// The date part will be ignored.
+// Add placeholder (sentinel) "report" task to bootstrap calculation of next report time.
+func InitializeSentinel(db storage.Storage, now time.Time) error {
+	err := db.CreateTaskLog(storage.TaskInput{
+		TaskName: "report", Status: string(handlers.TASK_SENTINEL), Timestamp: now, Details: ""})
+	return err
+}
+
+// Decide if report should be generated and send at given time `query`.
+// If error is not nil returned bool value must be ignored.
 func ShouldReport(db storage.Storage, config *conf.Config, query time.Time) (bool, error) {
-	// TODO: this function could use more work, building minimal functionality now
-
-	// Provide default REPORT_TIME as 17h of local time.
-	ts := time.Now()
-	defaultHour := 17
-	ref := time.Date(ts.Year(), ts.Month(), ts.Day(), defaultHour, 0, 0, 0, ts.Location())
-	config.SetDefault("REPORT_TIME", ref.Format(storage.TIME_FORMAT))
-
-	targetStr := config.GetString("REPORT_TIME")
-	target, err := time.Parse(storage.TIME_FORMAT, targetStr)
+	task, err := db.LatestTaskLog("report")
 	if err != nil {
 		return false, err
 	}
-
-	// should report when close to REPORT_TIME
-	timeDiffFromTarget :=
-		abs(target.UTC().Hour()-query.UTC().Hour())*60 +
-			abs(target.UTC().Minute()-query.UTC().Minute())
-
-	// TODO: hardcoded
-	if timeDiffFromTarget > 60 {
-		return false, nil
-	}
-
-	lastTimestamp, lastStatus, err := db.LatestTaskLog("report")
-	if err != nil {
-		return false, err
-	}
-	// no previous report or failed to report -> should report
-	if lastTimestamp.IsZero() || lastStatus != "OK" {
+	// Report now if not previous report found.
+	// Use InitializeSentinel to delay reporting too soon
+	// after startup.
+	if task == nil {
 		return true, nil
 	}
-	// should not report if reported recently
-	timeDiffFromLast := query.Sub(lastTimestamp).Abs()
-	if timeDiffFromLast < 90*time.Minute {
-		return false, nil
+	// retry immediately if previous attempt failed
+	if task.Status == string(handlers.TASK_ERROR) {
+		return true, nil
 	}
 
-	return true, nil
+	nextReportTime := NextReportTime(config, task.Timestamp)
+	isAfter := query.After(nextReportTime)
+	return isAfter, nil
 }
 
 func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {

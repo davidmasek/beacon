@@ -9,6 +9,14 @@ import (
 	"github.com/davidmasek/beacon/storage"
 )
 
+type TaskStatus string
+
+const (
+	TASK_OK       TaskStatus = "OK"
+	TASK_ERROR    TaskStatus = "ERROR"
+	TASK_SENTINEL TaskStatus = "SENTINEL"
+)
+
 type ServiceReport struct {
 	ServiceId         string
 	ServiceStatus     monitor.ServiceStatus

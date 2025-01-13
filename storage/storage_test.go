@@ -264,42 +264,42 @@ func TestTaskLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// log task A -> A.1
-	err = db.CreateTaskLog(task, status, timestamp)
+	err = db.CreateTaskLog(TaskInput{task, status, timestamp, ""})
 	require.NoError(t, err)
 
 	// get A -> A.1
-	gotTimestamp, gotStatus, err := db.LatestTaskLog(task)
+	gotTask, err := db.LatestTaskLog(task)
 	require.NoError(t, err)
 
-	require.Equal(t, timestamp, gotTimestamp)
-	require.Equal(t, status, gotStatus)
+	require.Equal(t, timestamp, gotTask.Timestamp)
+	require.Equal(t, status, gotTask.Status)
 
 	now := time.Now()
 	newStatus := "FAIL"
 
 	// log task B -> B.1
-	err = db.CreateTaskLog(otherTask, newStatus, now)
+	err = db.CreateTaskLog(TaskInput{otherTask, newStatus, now, ""})
 	require.NoError(t, err)
 
 	// get task A -> A.1
-	gotTimestamp, gotStatus, err = db.LatestTaskLog(task)
+	gotTask, err = db.LatestTaskLog(task)
 	require.NoError(t, err)
 
-	require.Equal(t, timestamp, gotTimestamp)
-	require.Equal(t, status, gotStatus)
+	require.Equal(t, timestamp, gotTask.Timestamp)
+	require.Equal(t, status, gotTask.Status)
 
 	// log task A -> A.2
-	err = db.CreateTaskLog(task, newStatus, now)
+	err = db.CreateTaskLog(TaskInput{task, newStatus, now, ""})
 	require.NoError(t, err)
 
 	// get task A -> A.2
-	gotTimestamp, gotStatus, err = db.LatestTaskLog(task)
+	gotTask, err = db.LatestTaskLog(task)
 	require.NoError(t, err)
 
 	// we do not store sub-second time info
 	// even if we did time comparisons are tricky as they require
 	// timezones to match even if they represent the same time
 	// (i.e. two representations of the same time are not equal)
-	require.WithinDuration(t, now, gotTimestamp, time.Second)
-	require.Equal(t, newStatus, gotStatus)
+	require.WithinDuration(t, now, gotTask.Timestamp, time.Second)
+	require.Equal(t, newStatus, gotTask.Status)
 }
