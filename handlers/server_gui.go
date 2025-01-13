@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"time"
 
 	"github.com/davidmasek/beacon/conf"
 	"github.com/davidmasek/beacon/monitor"
@@ -75,9 +76,42 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 			http.Error(w, "Failed to render page", http.StatusInternalServerError)
 			return
 		}
-		err = tmpl.Execute(w, services)
+
+		err = tmpl.Execute(w, map[string]any{
+			"services": services,
+		})
 		if err != nil {
 			log.Println("Failed to render", err)
+			http.Error(w, "Failed to render page", http.StatusInternalServerError)
+		}
+	}
+}
+
+// Show services status
+func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tmpl := template.New("about.html")
+		path := filepath.Join("templates", "about.html")
+		tmpl, err := tmpl.ParseFS(TEMPLATES, path)
+		if err != nil {
+			log.Printf("Error parsing template: %v", err)
+			http.Error(w, "Failed to render page", http.StatusInternalServerError)
+			return
+		}
+
+		timeFormat := "15:04 Monday 02 January"
+		lastReportTime := "never"
+		serverTime := time.Now().In(&config.Timezone).Format(timeFormat)
+		nextReportAfter := "TODO"
+
+		err = tmpl.Execute(w, map[string]any{
+			"lastReportTime": lastReportTime,
+			"serverTime":     serverTime,
+			"nextReportTime": nextReportAfter,
+		})
+		if err != nil {
+			log.Println("Failed to render", err)
+			http.Error(w, "Failed to render page", http.StatusInternalServerError)
 		}
 	}
 }

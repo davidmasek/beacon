@@ -4,6 +4,12 @@ This documents describes some internals, implementation details, and tries it's 
 
 You should start with the main [README](README.md).
 
+TODO: for sending email it might be actually nice to calculate the date of "NEXT" send and keep that in DB
+- and on homepage we could have
+- "Last report send at XXX"
+- "Next report should be send at YYY"
+- "Server time is ZZZ"
+
 
 ## 🚧 Feature list:
 - 🟢 heartbeat listener
