@@ -69,8 +69,12 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 		}
 
 		tmpl := template.New("index.html").Funcs(funcMap)
-		path := filepath.Join("templates", "index.html")
-		tmpl, err := tmpl.ParseFS(TEMPLATES, path)
+		// todo: might want to parse this only once
+		tmpl, err := tmpl.ParseFS(TEMPLATES,
+			filepath.Join("templates", "index.html"),
+			filepath.Join("templates", "header.html"),
+			filepath.Join("templates", "common.css"),
+		)
 		if err != nil {
 			log.Printf("Error parsing template: %v", err)
 			http.Error(w, "Failed to render page", http.StatusInternalServerError)
@@ -78,7 +82,8 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 		}
 
 		err = tmpl.Execute(w, map[string]any{
-			"services": services,
+			"services":    services,
+			"CurrentPage": "home",
 		})
 		if err != nil {
 			log.Println("Failed to render", err)
@@ -91,8 +96,11 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tmpl := template.New("about.html")
-		path := filepath.Join("templates", "about.html")
-		tmpl, err := tmpl.ParseFS(TEMPLATES, path)
+		tmpl, err := tmpl.ParseFS(TEMPLATES,
+			filepath.Join("templates", "about.html"),
+			filepath.Join("templates", "header.html"),
+			filepath.Join("templates", "common.css"),
+		)
 		if err != nil {
 			log.Printf("Error parsing template: %v", err)
 			http.Error(w, "Failed to render page", http.StatusInternalServerError)
@@ -108,6 +116,7 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 			"lastReportTime": lastReportTime,
 			"serverTime":     serverTime,
 			"nextReportTime": nextReportAfter,
+			"CurrentPage":    "about",
 		})
 		if err != nil {
 			log.Println("Failed to render", err)

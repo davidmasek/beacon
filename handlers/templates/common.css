@@ -1,0 +1,92 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f4f4f9;
+    color: #333;
+    /* line-height: 1.6; */
+}
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    /* gap: 20px; */
+}
+.panel {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+.block {
+    background-color: #fff;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* General Navbar Styles */
+.navbar {
+    padding: 10px 0;
+}
+
+.nav-container {
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 20px; /* Reduced gap between title and buttons */
+}
+
+/* Title Styles */
+.site-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+    text-decoration: none;
+}
+
+.site-title:hover {
+    color: #000; /* Subtle dark hover effect */
+}
+
+/* Navigation Links */
+.nav-links {
+    display: flex;
+    gap: 10px; /* Reduced gap between links */
+}
+
+.nav-link {
+    color: #333;
+    text-decoration: none;
+    font-size: 16px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: color 0.2s ease;
+}
+
+/* Highlight Current Page */
+.current {
+    font-weight: bold;
+    text-decoration: underline; /* Subtle indication for the active page */
+}
+
+/* Hover Effects */
+.nav-link:hover {
+    color: #000; /* Subtle dark hover effect */
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .nav-container {
+        flex-direction: column;
+        gap: 10px; /* Maintain comfortable spacing for vertical layout */
+    }
+    .nav-links {
+        justify-content: center;
+    }
+}
