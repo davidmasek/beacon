@@ -1,0 +1,8 @@
+<header class="navbar">
+    <div class="nav-container">
+        <a href="/" class="site-title {{ if eq .CurrentPage "home" }}current{{ end }}">Beacon</a>
+        <nav class="nav-links">
+            <a href="/about" class="nav-link {{ if eq .CurrentPage "about" }}current{{ end }}">About</a>
+        </nav>
+    </div>
+</header>
