@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS task_logs (
     user_id INTEGER,
     task_name TEXT NOT NULL,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    status TEXT NOT NULL
+    status TEXT NOT NULL,
+    details TEXT
 );
 
 CREATE TABLE IF NOT EXISTS service_state (

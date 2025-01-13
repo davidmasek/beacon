@@ -35,7 +35,12 @@ func (s *Secret) Get() string {
 }
 
 type Config struct {
+	// TODO: expose in config file
 	Timezone time.Location
+	// TODO: expose in config file
+	// report after n-th hour in the day
+	// e.g. 17 -> report after 5pm
+	ReportAfter int
 
 	services []ServiceConfig
 
@@ -325,12 +330,14 @@ func DefaultConfigFrom(configFile string) (*Config, error) {
 // Empty config
 func NewConfig() *Config {
 	config := &Config{
-		Timezone:  *time.Local,
-		envPrefix: ENV_VAR_PREFIX,
-		services:  []ServiceConfig{},
-		parents:   []string{},
-		settings:  make(map[string]interface{}),
-		overrides: make(map[string]interface{}),
+		Timezone: *time.Local,
+		// todo: better defaults approach
+		ReportAfter: 17,
+		envPrefix:   ENV_VAR_PREFIX,
+		services:    []ServiceConfig{},
+		parents:     []string{},
+		settings:    make(map[string]interface{}),
+		overrides:   make(map[string]interface{}),
 	}
 	return config
 }

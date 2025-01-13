@@ -2,12 +2,15 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/davidmasek/beacon/conf"
+	"github.com/davidmasek/beacon/handlers"
 	"github.com/davidmasek/beacon/storage"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -37,32 +40,80 @@ func TestRunSingle(t *testing.T) {
 	// TODO: check service appears in HTML
 }
 
+func TestNextReportTime(t *testing.T) {
+	config := conf.NewConfig()
+	config.ReportAfter = 10
+	timezone, err := time.LoadLocation("America/New_York")
+	require.NoError(t, err)
+	config.Timezone = *timezone
+
+	now := time.Now()
+	next := NextReportTime(config, now)
+	assert.Equal(t, 10, next.Hour())
+	assert.Equal(t, now.In(timezone).Day()+1, next.Day(), fmt.Sprintf("now: %s, next: %s\n", now, next))
+}
+
 func TestShouldReport(t *testing.T) {
 	db := storage.NewTestDb(t)
 	defer db.Close()
 	config, err := conf.ExampleConfig()
 	require.NoError(t, err)
 
-	targetStr := "2024-12-29T05:31:26-08:00"
-	config.Set("REPORT_TIME", targetStr)
-
-	// ~ minute after target, but different timezone
-	queryStr := "2024-12-29T14:32:26+01:00"
-	query, err := time.Parse(storage.TIME_FORMAT, queryStr)
+	config.ReportAfter = 10
+	timezone, err := time.LoadLocation("Europe/Prague")
 	require.NoError(t, err)
+	config.Timezone = *timezone
 
-	// empty DB and current time close to target -> should report
-	doReport, err := ShouldReport(db, config, query)
-	require.NoError(t, err)
-	require.True(t, doReport)
+	now := time.Date(2020, 5, 19, 17, 30, 0, 0, timezone)
+	tSameDayLater := time.Date(2020, 5, 19, 17, 30, 0, 0, timezone)
+	tNextDayEarly := time.Date(2020, 5, 20, 5, 30, 0, 0, timezone)
+	tNextDayNoon := time.Date(2020, 5, 20, 12, 30, 0, 0, timezone)
+	tNextMonthYearly := time.Date(2020, 6, 1, 1, 0, 0, 0, timezone)
+	times := []time.Time{
+		now, tSameDayLater, tNextDayEarly, tNextDayNoon, tNextMonthYearly,
+	}
 
-	err = db.CreateTaskLog("report", "OK", query)
-	require.NoError(t, err)
+	assertShouldReport := func(expectedValues ...bool) {
+		require.Equal(t, len(times), len(expectedValues))
+		for i := range times {
+			reportTime := times[i]
+			expected := expectedValues[i]
+			got, err := ShouldReport(db, config, reportTime)
+			require.NoError(t, err)
+			assert.Equal(t, expected, got, reportTime)
+		}
+	}
 
-	// already reported -> should not report
-	doReport, err = ShouldReport(db, config, query)
+	// empty DB -> should report
+	assertShouldReport(true, true, true, true, true)
+
+	err = InitializeSentinel(db, now)
 	require.NoError(t, err)
-	require.False(t, doReport)
+	// with sentinel -> should report next day after configured time or later
+	assertShouldReport(false, false, false, true, true)
+
+	// report created @ tSameDayLater
+	err = db.CreateTaskLog(
+		storage.TaskInput{TaskName: "report", Status: string(handlers.TASK_OK), Timestamp: tSameDayLater, Details: ""})
+	require.NoError(t, err)
+	// -> should report next day after configured time or later
+	assertShouldReport(false, false, false, true, true)
+
+	// report created @ tNextDayEarly
+	err = db.CreateTaskLog(
+		storage.TaskInput{TaskName: "report", Status: string(handlers.TASK_OK), Timestamp: tNextDayEarly, Details: ""})
+	require.NoError(t, err)
+	// -> should not report same day again
+	assertShouldReport(false, false, false, false, true)
+
+	// report failed @ tNextDayNoon
+	err = db.CreateTaskLog(
+		storage.TaskInput{TaskName: "report", Status: string(handlers.TASK_ERROR), Timestamp: tNextDayNoon, Details: ""})
+	require.NoError(t, err)
+	// -> should retry
+	got, err := ShouldReport(db, config, tNextDayNoon.Add(time.Hour))
+	require.NoError(t, err)
+	assert.Equal(t, true, got)
 }
 
 func TestStart(t *testing.T) {

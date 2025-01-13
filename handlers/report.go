@@ -95,10 +95,14 @@ func DoReportTask(db storage.Storage, config *conf.Config, now time.Time) error 
 		err = errors.Join(err, emailErr)
 	}
 
-	status := "OK"
+	status := TASK_OK
+	details := ""
 	if err != nil {
-		status = err.Error()
+		status = TASK_ERROR
+		details = err.Error()
+
 	}
-	dbErr := db.CreateTaskLog("report", status, now)
+	dbErr := db.CreateTaskLog(storage.TaskInput{
+		TaskName: "report", Status: string(status), Timestamp: now, Details: details})
 	return errors.Join(err, dbErr)
 }

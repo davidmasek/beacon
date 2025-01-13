@@ -36,6 +36,20 @@ type User struct {
 	email string
 }
 
+type TaskInput struct {
+	TaskName  string
+	Status    string
+	Timestamp time.Time
+	Details   string
+}
+
+type Task struct {
+	TaskName  string
+	Status    string
+	Timestamp time.Time
+	Details   string
+}
+
 type Storage interface {
 	Close() error
 	// List all distinct services
@@ -55,12 +69,11 @@ type Storage interface {
 	// Get user if email and password match
 	ValidateUser(email string, password string) (*User, error)
 	// Log new task run
-	CreateTaskLog(taskName string, status string, timestamp time.Time) error
+	CreateTaskLog(taskInput TaskInput) error
 	// Get latest task log.
-	//
-	// Return time.Time{}, empty status and nil error when none found.
-	// You can use timestamp.IsZero() to check for time.Time{}
-	LatestTaskLog(taskName string) (time.Time, string, error)
+	LatestTaskLog(taskName string) (*Task, error)
+	// Get latest task log with given status.
+	LatestTaskLogWithStatus(taskName string, status string) (*Task, error)
 }
 
 // https://www.sqlite.org/lang_select.html#limitoffset
@@ -81,43 +94,65 @@ type SQLStorage struct {
 	db *sql.DB
 }
 
-func (s *SQLStorage) CreateTaskLog(taskName string, status string, timestamp time.Time) error {
-	timestampStr := timestamp.UTC().Format(TIME_FORMAT)
+func (s *SQLStorage) CreateTaskLog(taskInput TaskInput) error {
+	timestampStr := taskInput.Timestamp.UTC().Format(TIME_FORMAT)
 	_, err := s.db.Exec(
-		"INSERT INTO task_logs (task_name, status, timestamp) VALUES (?, ?, ?)",
-		taskName,
-		status,
+		"INSERT INTO task_logs (task_name, status, timestamp, details) VALUES (?, ?, ?, ?)",
+		taskInput.TaskName,
+		taskInput.Status,
 		timestampStr,
+		taskInput.Details,
 	)
 	return err
 }
 
-func (s *SQLStorage) LatestTaskLog(taskName string) (time.Time, string, error) {
+func (s *SQLStorage) LatestTaskLogWithStatus(taskName string, status string) (*Task, error) {
 	var timestampStr string
-	var status string
+	var details string
+	var taskNameDb string
+	var statusDb string
 
-	err := s.db.QueryRow(
-		`SELECT timestamp, status 
+	var err error
+	// status should never be "" so use empty string to mean any status
+	if status == "" {
+		err = s.db.QueryRow(
+			`SELECT timestamp, status, details, task_name
 		 FROM task_logs
 		 WHERE task_name = ?
 		 ORDER BY timestamp DESC
 		 LIMIT 1`,
-		taskName,
-	).Scan(&timestampStr, &status)
+			taskName,
+		).Scan(&timestampStr, &statusDb, &details, &taskNameDb)
+	} else {
+		err = s.db.QueryRow(
+			`SELECT timestamp, status, details, task_name
+		 FROM task_logs
+		 WHERE task_name = ? AND status = ?
+		 ORDER BY timestamp DESC
+		 LIMIT 1`,
+			taskName, status,
+		).Scan(&timestampStr, &statusDb, &details, &taskNameDb)
+	}
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return time.Time{}, "", nil // No logs found
+			return nil, nil // No logs found
 		}
-		return time.Time{}, "", err // Query error
+		return nil, err // Query error
 	}
 
 	timestamp, err := time.Parse(TIME_FORMAT, timestampStr)
 	if err != nil {
-		return time.Time{}, "", err
+		return nil, err
 	}
 
-	return timestamp, status, nil
+	return &Task{TaskName: taskNameDb, Status: statusDb,
+		Timestamp: timestamp, Details: details}, nil
+
+}
+
+func (s *SQLStorage) LatestTaskLog(taskName string) (*Task, error) {
+	return s.LatestTaskLogWithStatus(taskName, "")
 }
 
 func (s *SQLStorage) CreateUser(email string, password string) error {
