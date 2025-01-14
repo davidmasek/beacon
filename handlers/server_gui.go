@@ -115,6 +115,7 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 			return
 		}
 		var lastReportTime, nextReportAfter string
+		lastReportStatus := ""
 		if lastReport == nil {
 			lastReportTime = "never"
 			nextReportAfter = "error"
@@ -125,6 +126,7 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 				In(&config.Timezone).Format(timeFormat)
 		} else {
 			lastReportTime = lastReport.Timestamp.In(&config.Timezone).Format(timeFormat)
+			lastReportStatus = lastReport.Status
 			nextReportAfter = NextReportTime(config, lastReport.Timestamp).
 				In(&config.Timezone).Format(timeFormat)
 		}
@@ -134,6 +136,7 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 
 		err = tmpl.Execute(w, map[string]any{
 			"lastReportTime":        lastReportTime,
+			"lastReportStatus":      lastReportStatus,
 			"serverTime":            serverTime,
 			"nextReportTime":        nextReportAfter,
 			"ReportAfter":           config.ReportAfter,
