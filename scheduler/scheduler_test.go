@@ -92,7 +92,7 @@ func TestShouldReport(t *testing.T) {
 	config.ReportAfter = 10
 	timezone, err := time.LoadLocation("Europe/Prague")
 	require.NoError(t, err)
-	config.Timezone = conf.TzLocation{timezone}
+	config.Timezone = conf.TzLocation{Location: timezone}
 
 	now := time.Date(2020, 5, 19, 17, 30, 0, 0, timezone)
 	tSameDayLater := time.Date(2020, 5, 19, 17, 30, 0, 0, timezone)
