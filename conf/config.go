@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
 	"time"
 
 	"github.com/caarlos0/env/v11"
@@ -215,6 +216,11 @@ func ConfigFromBytes(data []byte) (*Config, error) {
 	}
 	err = env.ParseWithOptions(config, env.Options{
 		Prefix: ENV_VAR_PREFIX,
+		FuncMap: map[reflect.Type]env.ParserFunc{
+			reflect.TypeOf(Secret{}): func(v string) (interface{}, error) {
+				return Secret{v}, nil
+			},
+		},
 	})
 	if err != nil {
 		return nil, err

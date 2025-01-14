@@ -151,3 +151,12 @@ prefix: "[test]"
 	})
 	require.Equal(t, "h4xor", emailConfig.SmtpPassword.Get())
 }
+
+func TestSecretFromEnv(t *testing.T) {
+	err := os.Setenv("BEACON_EMAIL_SMTP_PASSWORD", "secr4t")
+	require.NoError(t, err)
+	conf, err := ConfigFromBytes([]byte(""))
+	require.NoError(t, err)
+	require.Equal(t, "secr4t", conf.EmailConf.SmtpPassword.Get())
+
+}
