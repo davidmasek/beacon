@@ -5,11 +5,22 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
+
+// Load a few example timezone locations
+func TestLoadTimezone(t *testing.T) {
+	_, err := time.LoadLocation("UTC")
+	require.NoError(t, err)
+	_, err = time.LoadLocation("Australia/Sydney")
+	require.NoError(t, err)
+	_, err = time.LoadLocation("America/Chicago")
+	require.NoError(t, err)
+}
 
 func TestLoadConfigFrom(t *testing.T) {
 	exampleConfigFile := filepath.Join("..", "config.sample.yaml")
@@ -18,8 +29,22 @@ func TestLoadConfigFrom(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, config)
 
-	require.True(t, config.IsSet("services"), config)
-	require.True(t, config.IsSet("email"), config)
+	require.NotNil(t, config.Services)
+	require.NotNil(t, config.EmailConf)
+}
+
+func TestExampleConfig(t *testing.T) {
+	config, err := ExampleConfig()
+	require.NoError(t, err)
+	expectedTimezone, err := time.LoadLocation("Europe/Prague")
+	require.NoError(t, err)
+	// todo[defaults]: would prefer not having constants here
+	// but need some testing for parsing the more complex types
+	// Should refactor this once we have better defaults
+	assert.Equal(t, expectedTimezone, config.Timezone.Location,
+		fmt.Sprintf("%s x %s", expectedTimezone.String(), config.Timezone.Location.String()))
+	assert.Equal(t, 17, config.ReportAfter)
+	assert.Equal(t, 15*time.Minute, config.SchedulerPeriod)
 }
 
 func TestEnvVariablesOverwrite(t *testing.T) {
@@ -69,19 +94,11 @@ services:
   last:`)
 	config, err := ConfigFromBytes(data)
 	require.NoError(t, err)
-	services := config.Services()
 	names := []string{}
-	for _, service := range services {
+	for _, service := range config.AllServices() {
 		names = append(names, service.Id)
 	}
 	require.Equal(t, expectedNames, names)
-}
-
-func TestConfigSet(t *testing.T) {
-	config := NewConfig()
-	config.Set("foo", true)
-	foo := config.GetBool("foo")
-	require.True(t, foo)
 }
 
 func TestSecretPrint(t *testing.T) {
@@ -96,8 +113,10 @@ func TestSecretPrint(t *testing.T) {
 	assert.NotContains(t, fmt.Sprintf("%+v", secret), "Greg")
 	assert.NotContains(t, fmt.Sprintf("%#v", secret), "Greg")
 
-	config := NewConfig()
-	config.settings["password"] = secret
+	config, err := ConfigFromBytes([]byte(`email:
+  smtp_password: Greg
+`))
+	require.NoError(t, err)
 	assert.NotContains(t, fmt.Sprint(config), "Greg")
 	assert.NotContains(t, fmt.Sprintf("%v", config), "Greg")
 	assert.NotContains(t, fmt.Sprintf("%+v", config), "Greg")
@@ -128,6 +147,7 @@ prefix: "[test]"
 		"you@example.fake",
 		"noreply@example.fake",
 		"[test]",
+		"",
 	})
 	require.Equal(t, "h4xor", emailConfig.SmtpPassword.Get())
 }

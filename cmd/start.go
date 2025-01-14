@@ -30,7 +30,7 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
-		db, err := storage.InitDB(config.GetString("DB"))
+		db, err := storage.InitDB(config.DbPath)
 		if err != nil {
 			return fmt.Errorf("failed to initialize database: %w", err)
 		}
@@ -39,7 +39,7 @@ var startCmd = &cobra.Command{
 		// TODO: this currently overwrites other options
 		// that should happen only if specified
 		// Is it possible to distinguish with Cobra?
-		config.Set("port", port)
+		config.Port = port
 		server, err := handlers.StartServer(db, config)
 		if err != nil {
 			return err

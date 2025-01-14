@@ -9,13 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLoadExampleConfig(t *testing.T) {
+func TestExampleConfigServices(t *testing.T) {
 	configFile := filepath.Join("..", "config.sample.yaml")
 	config, err := DefaultConfigFrom(configFile)
 	require.NoError(t, err)
 
 	services := map[string]ServiceConfig{}
-	for _, cfg := range config.services {
+	for _, cfg := range config.AllServices() {
 		services[cfg.Id] = cfg
 	}
 

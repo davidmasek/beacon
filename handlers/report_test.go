@@ -87,9 +87,8 @@ func TestNextReportTime(t *testing.T) {
 	config := conf.NewConfig()
 	config.ReportAfter = 10
 	timezone, err := time.LoadLocation("America/New_York")
-	// timezone, err := time.LoadLocation("")
 	require.NoError(t, err)
-	config.Timezone = *timezone
+	config.Timezone = conf.TzLocation{Location: timezone}
 
 	now := time.Now()
 	next := NextReportTime(config, now).In(timezone)

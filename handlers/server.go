@@ -17,17 +17,15 @@ func StartServer(db storage.Storage, config *conf.Config) (*http.Server, error) 
 	mux.HandleFunc("/about", handleAbout(db, config))
 
 	monitor.RegisterHeartbeatHandlers(db, mux)
-	// TODO: centralize defaults
-	config.SetDefault("port", "8088")
-	port := config.GetString("port")
+	port := config.Port
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%s", port),
+		Addr:    fmt.Sprintf(":%d", port),
 		Handler: mux,
 	}
 
 	go func() {
-		fmt.Printf("Starting UI server on http://localhost:%s\n", port)
+		fmt.Printf("Starting UI server on http://localhost:%d\n", port)
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
 			log.Print(err)
 			panic(err)

@@ -28,7 +28,7 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 		}
 		var services []ServiceStatus
 		serviceChecker := DefaultServiceChecker()
-		for _, serviceCfg := range config.Services() {
+		for _, serviceCfg := range config.AllServices() {
 			log.Println("Querying", serviceCfg.Id)
 			healthCheck, err := db.LatestHealthCheck(serviceCfg.Id)
 			if err != nil {
@@ -123,16 +123,16 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 		} else if lastReport.Status == string(TASK_SENTINEL) {
 			lastReportTime = "never"
 			nextReportAfter = NextReportTime(config, lastReport.Timestamp).
-				In(&config.Timezone).Format(timeFormat)
+				In(config.Timezone.Location).Format(timeFormat)
 		} else {
-			lastReportTime = lastReport.Timestamp.In(&config.Timezone).Format(timeFormat)
+			lastReportTime = lastReport.Timestamp.In(config.Timezone.Location).Format(timeFormat)
 			lastReportStatus = lastReport.Status
 			nextReportAfter = NextReportTime(config, lastReport.Timestamp).
-				In(&config.Timezone).Format(timeFormat)
+				In(config.Timezone.Location).Format(timeFormat)
 		}
-		serverTime := time.Now().In(&config.Timezone).Format(timeFormat)
+		serverTime := time.Now().In(config.Timezone.Location).Format(timeFormat)
 
-		zone, offset := time.Now().In(&config.Timezone).Zone()
+		zone, offset := time.Now().In(config.Timezone.Location).Zone()
 
 		err = tmpl.Execute(w, map[string]any{
 			"lastReportTime":        lastReportTime,
@@ -141,7 +141,7 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 			"nextReportTime":        nextReportAfter,
 			"ReportAfter":           config.ReportAfter,
 			"CurrentPage":           "about",
-			"Timezone":              config.Timezone.String(),
+			"Timezone":              config.Timezone.Location.String(),
 			"TimezoneAlt":           zone,
 			"TimezoneOffsetMinutes": offset / 60,
 		})

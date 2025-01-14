@@ -50,6 +50,7 @@ func InitializeSentinel(db storage.Storage, now time.Time) error {
 	if task != nil {
 		return nil
 	}
+	log.Printf("Creating sentinel report task with time %s\n", now)
 	err = db.CreateTaskLog(storage.TaskInput{
 		TaskName: "report", Status: string(handlers.TASK_SENTINEL), Timestamp: now, Details: ""})
 	return err
@@ -84,7 +85,7 @@ func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 	var err error = nil
 	if ShouldCheckWebServices(db, config, now) {
 		log.Println("Checking web services...")
-		err = CheckWebServices(db, config.Services())
+		err = CheckWebServices(db, config.AllServices())
 		// TODO: might want to continue on error here
 		if err != nil {
 			return err
@@ -107,9 +108,7 @@ func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 // Will not call run next job again until previous one returns, even
 // if specified interval passes.
 func Start(ctx context.Context, db storage.Storage, config *conf.Config) {
-	// TODO: add to config, minute only input seems OK
-	config.SetDefault("SCHEDULER_PERIOD", "15m")
-	checkInterval := config.GetDuration("SCHEDULER_PERIOD")
+	checkInterval := config.SchedulerPeriod
 	InitializeSentinel(db, time.Now())
 	log.Printf("Starting scheduler: run each %s\n", checkInterval)
 	startFunction(ctx, checkInterval, func(now time.Time) error {

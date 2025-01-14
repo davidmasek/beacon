@@ -23,3 +23,10 @@ email:
   send_to: you@example.fake
   sender: noreply@example.fake
   prefix: "[dev]"
+  # defaults to sending email
+  enabled: false
+
+# examples: UTC, Australia/Sydney, America/Chicago
+timezone: "Europe/Prague"
+# 17 == 5pm, and so on
+report_time: 17
