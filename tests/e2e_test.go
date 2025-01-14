@@ -37,9 +37,9 @@ func TestEndToEndHeartbeat(t *testing.T) {
 	require.NoError(t, err)
 
 	// shouldn't be fixed, but at least it's different than the default
-	serverPort := "9000"
-	config.Set("port", serverPort)
-	t.Logf("Starting server on port %s\n", serverPort)
+	serverPort := 9000
+	config.Port = serverPort
+	t.Logf("Starting server on port %d\n", serverPort)
 	server, err := handlers.StartServer(db, config)
 	require.NoError(t, err)
 	defer server.Close()
@@ -72,8 +72,8 @@ func TestEndToEndHeartbeat(t *testing.T) {
 }
 
 // TODO: could replace with resty ?
-func Post(suffix string, t *testing.T, port string) string {
-	resp, err := http.Post(fmt.Sprintf("http://localhost:%s%s", port, suffix), "application/json", nil)
+func Post(suffix string, t *testing.T, port int) string {
+	resp, err := http.Post(fmt.Sprintf("http://localhost:%d%s", port, suffix), "application/json", nil)
 	if err != nil {
 		t.Fatalf("Unable to POST to %s: %+v", suffix, err)
 	}
@@ -103,8 +103,8 @@ func Post(suffix string, t *testing.T, port string) string {
 }
 
 // TODO: could replace with resty ?
-func Get(suffix string, t *testing.T, port string) string {
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%s%s", port, suffix))
+func Get(suffix string, t *testing.T, port int) string {
+	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", port, suffix))
 	if err != nil {
 		t.Fatalf("Unable to GET to %s: %+v", suffix, err)
 	}

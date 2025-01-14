@@ -25,8 +25,7 @@ func TestRunSingle(t *testing.T) {
 	defer os.Remove(tmp_file)
 	t.Logf("Using tmp file: %q\n", tmp_file)
 
-	config.Set("report-name", tmp_file)
-	config.Set("REPORT_TIME", time.Now().Format(storage.TIME_FORMAT))
+	config.ReportName = tmp_file
 	err = RunSingle(db, config, time.Now())
 	require.NoError(t, err)
 	require.FileExists(t, tmp_file)
@@ -93,7 +92,7 @@ func TestShouldReport(t *testing.T) {
 	config.ReportAfter = 10
 	timezone, err := time.LoadLocation("Europe/Prague")
 	require.NoError(t, err)
-	config.Timezone = *timezone
+	config.Timezone = conf.TzLocation{timezone}
 
 	now := time.Date(2020, 5, 19, 17, 30, 0, 0, timezone)
 	tSameDayLater := time.Date(2020, 5, 19, 17, 30, 0, 0, timezone)

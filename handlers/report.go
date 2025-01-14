@@ -33,7 +33,7 @@ import (
 // - server / web_gui / smth
 // - keep scheduler with reduced functionality ?
 func NextReportTime(config *conf.Config, lastReportTime time.Time) time.Time {
-	lastReportTime = lastReportTime.In(&config.Timezone)
+	lastReportTime = lastReportTime.In(config.Timezone.Location)
 	nextReportDay := lastReportTime.Add(24 * time.Hour)
 	nextReportTime := time.Date(
 		nextReportDay.Year(), nextReportDay.Month(), nextReportDay.Day(),
@@ -78,15 +78,7 @@ func GenerateReport(db storage.Storage) ([]ServiceReport, error) {
 }
 
 func sendEmail(config *conf.Config, reports []ServiceReport) error {
-	if !config.IsSet("email") {
-		err := fmt.Errorf("no email configuration provided")
-		return err
-	}
-	server, err := LoadServer(&config.EmailConf)
-	if err != nil {
-		err := fmt.Errorf("failed to load SMTP server: %w", err)
-		return err
-	}
+	server := LoadServer(&config.EmailConf)
 	mailer := SMTPMailer{
 		Server: server,
 	}
@@ -102,8 +94,10 @@ func DoReportTask(db storage.Storage, config *conf.Config, now time.Time) error 
 		return err
 	}
 
-	config.SetDefault("report-name", "report")
-	filename := config.GetString("report-name")
+	filename := config.ReportName
+	if filename == "" {
+		filename = "report"
+	}
 
 	if !strings.HasSuffix(filename, ".html") {
 		filename = fmt.Sprintf("%s.html", filename)
@@ -113,13 +107,7 @@ func DoReportTask(db storage.Storage, config *conf.Config, now time.Time) error 
 	// as it is better if at least one of the two succeeds
 	err = WriteReportToFile(reports, filename)
 
-	// TODO: need better way so check if should send email
-	// currently the config.IsSet handles the "config-file path"
-	// and allows overwrite via config "send-mail" variable for CLI usage
-	shouldSendEmail := config.EmailConf.SmtpPassword.IsSet()
-	if config.IsSet("send-mail") {
-		shouldSendEmail = config.GetBool("send-mail")
-	}
+	shouldSendEmail := config.EmailConf.IsEnabled()
 	if shouldSendEmail {
 		emailErr := sendEmail(config, reports)
 		err = errors.Join(err, emailErr)

@@ -7,6 +7,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type ServicesList struct {
+	Services []ServiceConfig
+}
+
 type ServiceConfig struct {
 	Id      string
 	Timeout time.Duration
@@ -110,9 +114,9 @@ func (sc *ServiceConfig) IsWebService() bool {
 	return sc.Url != ""
 }
 
-func parseServicesConfig(node *yaml.Node) ([]ServiceConfig, error) {
+func (servicesList *ServicesList) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.MappingNode {
-		return nil, fmt.Errorf("expected a mapping node, got %v", node.Kind)
+		return fmt.Errorf("expected a mapping node, got %v", node.Kind)
 	}
 	services := []ServiceConfig{}
 
@@ -123,14 +127,15 @@ func parseServicesConfig(node *yaml.Node) ([]ServiceConfig, error) {
 		input := map[string]any{}
 		err := valueNode.Decode(input)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		serviceConfig, err := NewServiceConfig(keyNode.Value, input)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		services = append(services, *serviceConfig)
 	}
-	return services, nil
+	servicesList.Services = services
+	return nil
 }

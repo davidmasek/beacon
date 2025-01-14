@@ -27,10 +27,13 @@ var reportCmd = &cobra.Command{
 			return err
 		}
 
-		config.Set("send-mail", sendMail)
-		config.Set("report-name", reportName)
+		if sendMail {
+			// todo: figure out options for SendMail
+			config.EmailConf.Enabled = "yes"
+		}
+		config.ReportName = reportName
 
-		db, err := storage.InitDB(config.GetString("DB"))
+		db, err := storage.InitDB(config.DbPath)
 		if err != nil {
 			return err
 		}

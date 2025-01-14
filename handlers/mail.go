@@ -54,13 +54,13 @@ type SMTPServer struct {
 }
 
 // Load the SMTP server details from config
-func LoadServer(emailConfig *conf.EmailConfig) (SMTPServer, error) {
+func LoadServer(emailConfig *conf.EmailConfig) SMTPServer {
 	return SMTPServer{
 		server:   emailConfig.SmtpServer,
 		port:     fmt.Sprint(emailConfig.SmtpPort),
 		username: emailConfig.SmtpUsername,
 		password: emailConfig.SmtpPassword,
-	}, nil
+	}
 }
 
 func SendMail(server SMTPServer, sender string, target string, subject string, body string) error {

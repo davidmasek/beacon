@@ -14,7 +14,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		db, err := storage.InitDB(config.GetString("DB"))
+		db, err := storage.InitDB(config.DbPath)
 		if err != nil {
 			return err
 		}

@@ -8,8 +8,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/caarlos0/env/v11"
@@ -47,6 +45,20 @@ type EmailConfig struct {
 	SendTo       string `yaml:"send_to" env:"EMAIL_SEND_TO"`
 	Sender       string `yaml:"sender" env:"EMAIL_SENDER"`
 	Prefix       string `yaml:"prefix" env:"EMAIL_PREFIX"`
+	// not bool to allow more flexible usage
+	Enabled string `yaml:"enabled" env:"EMAIL_ENABLED"`
+}
+
+func (emailConf *EmailConfig) IsEnabled() bool {
+	// explicitly enabled
+	if emailConf.Enabled == "yes" || emailConf.Enabled == "true" {
+		return true
+	}
+	// explicitly disabled
+	if emailConf.Enabled == "no" || emailConf.Enabled == "false" {
+		return false
+	}
+	return emailConf.SmtpPassword.IsSet()
 }
 
 func (s *Secret) UnmarshalYAML(node *yaml.Node) error {
@@ -57,224 +69,52 @@ func (s *Secret) UnmarshalYAML(node *yaml.Node) error {
 	return nil
 }
 
+// TzLocation wraps a *time.Location so we can provide custom YAML unmarshalling.
+type TzLocation struct {
+	Location *time.Location
+}
+
 type Config struct {
 	// TODO: add examples to config + README
-	Timezone time.Location `yaml:"timezone" env:"TIMEZONE"`
+	Timezone TzLocation `yaml:"timezone" env:"TIMEZONE"`
 	// report after n-th hour in the day
 	// e.g. 17 -> report after 5pm
-	ReportAfter int `yaml:"report_after" env:"REPORT_AFTER"`
+	ReportAfter     int           `yaml:"report_time" env:"REPORT_TIME"`
+	DbPath          string        `yaml:"db_path" env:"DB"`
+	ReportName      string        `yaml:"report_name" env:"REPORT_NAME"`
+	Port            int           `yaml:"port" env:"PORT"`
+	SchedulerPeriod time.Duration `yaml:"scheduler_period" env:"SCHEDULER_PERIOD"`
 
 	EmailConf EmailConfig `yaml:"email"`
 
-	services []ServiceConfig
+	Services ServicesList
 
 	envPrefix string
-	parents   []string
-	settings  map[string]interface{}
-	// manually set, should take precedence
-	overrides map[string]interface{}
+}
+
+func (s Config) AllServices() []ServiceConfig {
+	return s.Services.Services
 }
 
 func (s Config) String() string {
-	return fmt.Sprintf("BeaconConfig{\nEmail: %#v\nTimezone: %s\nReportAfter: %d\n}", s.EmailConf, s.Timezone.String(), s.ReportAfter)
+	confStr, err := yaml.Marshal(s)
+	if err != nil {
+		return err.Error()
+	}
+	nServices := -1
+	if s.Services.Services != nil {
+		nServices = len(s.Services.Services)
+	}
+	return fmt.Sprintf("BeaconConfig[%d services]\n%s\n", nServices, confStr)
+	// return fmt.Sprintf("BeaconConfig{\nEmail: %#v\nTimezone: %s\nReportAfter: %d\n}", s.EmailConf, s.Timezone.String(), s.ReportAfter)
 }
 
 func (s Config) GoString() string {
 	return "Config{*****}"
 }
 
-func (s Config) Services() []ServiceConfig {
-	return s.services
-}
-
-func (config *Config) AllSettings() map[string]interface{} {
-	// todo: does not use overrides
-	// - this is OK for the current use-case but terrible
-	// if used in other ways
-	// - Config needs refactor anyway, so not dealing with this now
-	// - probably the whole method should be removed in future
-	settings := config.settings
-	for _, parent := range config.parents {
-		if settings == nil {
-			return nil
-		}
-		settingsSub, ok := settings[parent].(map[string]interface{})
-		if ok {
-			settings = settingsSub
-		} else {
-			return nil
-		}
-	}
-	return settings
-}
-
-func (config *Config) keyToEnvVar(key string) string {
-	// todo: nested access
-	if strings.Contains(key, ".") {
-		panic("nested access with `.` not implemented")
-	}
-	// key = strings.ReplaceAll(key, ".", "_")
-	key = config.envPrefix + strings.Join(config.parents, "_") + "_" + key
-	key = strings.ToUpper(key)
-	return key
-}
-
-func (config *Config) get(key string) interface{} {
-	if config == nil {
-		return nil
-	}
-	// todo: nested access
-	if strings.Contains(key, ".") {
-		panic("nested access with `.` not implemented")
-	}
-	overrides := config.overrides
-	for _, parent := range config.parents {
-		if overrides == nil {
-			break
-		}
-		overridesSub, ok := overrides[parent].(map[string]interface{})
-		if ok {
-			overrides = overridesSub
-		}
-	}
-	val, ok := overrides[key]
-	if ok {
-		return val
-	}
-	// overwrite with ENV var if available
-	envVal, isSet := os.LookupEnv(config.keyToEnvVar(key))
-	if isSet {
-		return envVal
-	}
-	settings := config.settings
-	for _, parent := range config.parents {
-		if settings == nil {
-			return nil
-		}
-		settingsSub, ok := settings[parent].(map[string]interface{})
-		if ok {
-			settings = settingsSub
-		} else {
-			return nil
-		}
-	}
-	val, ok = settings[key]
-
-	if !ok {
-		return nil
-	}
-	return val
-}
-
-func (config *Config) GetString(key string) string {
-	val := config.get(key)
-	if val == nil {
-		return ""
-	}
-	strVal, ok := val.(string)
-	if ok {
-		return strVal
-	}
-	return fmt.Sprint(val)
-}
-
-func (config *Config) GetInt(key string) int {
-	val := config.get(key)
-	intVal, ok := val.(int)
-	if ok {
-		return intVal
-	}
-	strVal, ok := val.(string)
-	if !ok {
-		panic(fmt.Sprintf("For key %q - cannot convert %q to int", key, val))
-	}
-	intVal, err := strconv.Atoi(strVal)
-	if err != nil {
-		panic(fmt.Sprintf("For key %q - cannot convert %q to int", key, val))
-	}
-	return intVal
-}
-
-var boolyStrings = map[string]bool{
-	"true":  true,
-	"1":     true,
-	"TRUE":  true,
-	"false": false,
-	"0":     false,
-	"FALSE": false,
-}
-
-func (config *Config) GetBool(key string) bool {
-	val := config.get(key)
-	boolVal, isBool := val.(bool)
-	if isBool {
-		return boolVal
-	}
-	strVal, isString := val.(string)
-	if !isString {
-		panic(fmt.Sprintf("Cannot parse key %q with value %q as bool", key, config.settings[key]))
-	}
-	boolVal, isExpectedFormat := boolyStrings[strVal]
-	if !isExpectedFormat {
-		panic(fmt.Sprintf("Cannot parse key %q with value %q as bool", key, config.settings[key]))
-	}
-	return boolVal
-}
-
-func (config *Config) GetDuration(key string) time.Duration {
-	value := config.get(key)
-	durationValue, isDuration := value.(time.Duration)
-	if isDuration {
-		return durationValue
-	}
-	parsedValue, err := time.ParseDuration(value.(string))
-	if err != nil {
-		panic(fmt.Sprintf("Cannot parse %q as time.Duration", value))
-	}
-	return parsedValue
-}
-
-func (config *Config) Set(key string, value interface{}) {
-	// todo: nested access
-	if strings.Contains(key, ".") {
-		panic("nested access with `.` not implemented")
-	}
-	config.overrides[key] = value
-}
-
-func (config *Config) SetDefault(key string, value interface{}) {
-	// todo: nested access
-	if strings.Contains(key, ".") {
-		panic("nested access with `.` not implemented")
-	}
-	val := config.get(key)
-	if val == nil {
-		config.settings[key] = value
-	}
-}
-
-func (config *Config) IsSet(key string) bool {
-	// here if the key exists but has nil value we return false
-	// now this is kinda stupid but it kinda makes sense for our use-cases
-	// I don't have a solution that would be simple to do and work well atm
-	// todo: probably want to rethink the whole Config anyway
-	val := config.get(key)
-	return val != nil
-}
-
-func (config *Config) Sub(key string) *Config {
-	// todo: kinda weird implementation, not sure how I want to use this yet
-	if !config.IsSet(key) {
-		return nil
-	}
-	return &Config{
-		envPrefix: config.envPrefix,
-		parents:   append(config.parents, key),
-		settings:  config.settings,
-		overrides: config.overrides,
-	}
-}
-
+// TODO: keep this as Config strict and if needed to write than marshal?
+//
 //go:embed config.default.yaml
 var DEFAULT_CONFIG []byte
 
@@ -342,49 +182,28 @@ func DefaultConfigFrom(configFile string) (*Config, error) {
 // Empty config
 func NewConfig() *Config {
 	config := &Config{
-		Timezone: *time.Local,
-		// todo: better defaults approach
-		ReportAfter: 17,
-		envPrefix:   ENV_VAR_PREFIX,
-		services:    []ServiceConfig{},
-		parents:     []string{},
-		settings:    make(map[string]interface{}),
-		overrides:   make(map[string]interface{}),
+		Timezone: TzLocation{time.Local},
+		// todo[defaults]: better defaults approach
+		ReportAfter:     17,
+		Port:            8088,
+		SchedulerPeriod: 15 * time.Minute,
+		envPrefix:       ENV_VAR_PREFIX,
 	}
+	config.Services.Services = []ServiceConfig{}
 	return config
 }
 
-func (config *Config) UnmarshalYAML(value *yaml.Node) error {
-	if value.Kind != yaml.MappingNode {
-		return fmt.Errorf("expected a mapping node, got %v", value.Kind)
+func (tz *TzLocation) UnmarshalYAML(value *yaml.Node) error {
+	var tzName string
+	if err := value.Decode(&tzName); err != nil {
+		return err
 	}
-
-	for i := 0; i < len(value.Content); i += 2 {
-		keyNode := value.Content[i]
-		valueNode := value.Content[i+1]
-
-		// Access the key and value
-		key := keyNode.Value
-		log.Printf("Key: %s\n", key)
-
-		var err error
-		switch key {
-		case "services":
-			config.services, err = parseServicesConfig(valueNode)
-		case "email":
-			// TODO: overwrite with env
-			err = valueNode.Decode(&config.EmailConf)
-		default:
-			log.Printf("Unexpected key %v\n", key)
-		}
-		if err != nil {
-			return err
-		}
+	loc, err := time.LoadLocation(tzName)
+	if err != nil {
+		return fmt.Errorf("failed to load location %q: %w", tzName, err)
 	}
-
-	// TODO: use structured Config; currently quick "fix" to keep legacy code working
-	err := value.Decode(config.settings)
-	return err
+	tz.Location = loc
+	return nil
 }
 
 // Parse config from YAML and override using ENV variables
@@ -396,11 +215,6 @@ func ConfigFromBytes(data []byte) (*Config, error) {
 	}
 	err = env.ParseWithOptions(config, env.Options{
 		Prefix: ENV_VAR_PREFIX,
-		OnSet: func(tag string, value interface{}, isDefault bool) {
-			if value != nil {
-				log.Printf("[env] Set %s\n", tag)
-			}
-		},
 	})
 	if err != nil {
 		return nil, err
