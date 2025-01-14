@@ -130,6 +130,10 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 			nextReportAfter = NextReportTime(config, lastReport.Timestamp).
 				In(config.Timezone.Location).Format(timeFormat)
 		}
+		if !config.EmailConf.IsEnabled() {
+			// todo: more info would be nice (why disabled)
+			nextReportAfter = "disabled"
+		}
 		serverTime := time.Now().In(config.Timezone.Location).Format(timeFormat)
 
 		zone, offset := time.Now().In(config.Timezone.Location).Zone()
