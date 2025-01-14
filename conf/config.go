@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/caarlos0/env/v11"
 	"gopkg.in/yaml.v3"
 )
 
@@ -34,13 +35,36 @@ func (s *Secret) Get() string {
 	return s.value
 }
 
+func (s *Secret) IsSet() bool {
+	return s.value != ""
+}
+
+type EmailConfig struct {
+	SmtpServer   string `yaml:"smtp_server" env:"EMAIL_SMTP_SERVER"`
+	SmtpPort     int    `yaml:"smtp_port" env:"EMAIL_SMTP_PORT"`
+	SmtpUsername string `yaml:"smtp_username" env:"EMAIL_SMTP_USERNAME"`
+	SmtpPassword Secret `yaml:"smtp_password" env:"EMAIL_SMTP_PASSWORD"`
+	SendTo       string `yaml:"send_to" env:"EMAIL_SEND_TO"`
+	Sender       string `yaml:"sender" env:"EMAIL_SENDER"`
+	Prefix       string `yaml:"prefix" env:"EMAIL_PREFIX"`
+}
+
+func (s *Secret) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind != yaml.ScalarNode {
+		return fmt.Errorf("expected scalar node got %s", node.Value)
+	}
+	s.value = node.Value
+	return nil
+}
+
 type Config struct {
-	// TODO: expose in config file
-	Timezone time.Location
-	// TODO: expose in config file
+	// TODO: add examples to config + README
+	Timezone time.Location `yaml:"timezone" env:"TIMEZONE"`
 	// report after n-th hour in the day
 	// e.g. 17 -> report after 5pm
-	ReportAfter int
+	ReportAfter int `yaml:"report_after" env:"REPORT_AFTER"`
+
+	EmailConf EmailConfig `yaml:"email"`
 
 	services []ServiceConfig
 
@@ -52,9 +76,7 @@ type Config struct {
 }
 
 func (s Config) String() string {
-	// todo: should actually print something useful,
-	// but at least this does not leak secrets
-	return fmt.Sprintf("BeaconConfig%s", s.parents)
+	return fmt.Sprintf("BeaconConfig{\nEmail: %#v\nTimezone: %s\nReportAfter: %d\n}", s.EmailConf, s.Timezone.String(), s.ReportAfter)
 }
 
 func (s Config) GoString() string {
@@ -217,11 +239,6 @@ func (config *Config) Set(key string, value interface{}) {
 	if strings.Contains(key, ".") {
 		panic("nested access with `.` not implemented")
 	}
-	if len(config.parents) > 0 {
-		// todo: sub configs are read only for now
-		// not sure what to do with them atm
-		panic("Cannot set values for .Sub configs")
-	}
 	config.overrides[key] = value
 }
 
@@ -229,11 +246,6 @@ func (config *Config) SetDefault(key string, value interface{}) {
 	// todo: nested access
 	if strings.Contains(key, ".") {
 		panic("nested access with `.` not implemented")
-	}
-	if len(config.parents) > 0 {
-		// todo: sub configs are read only for now
-		// not sure what to do with them atm
-		panic("Cannot set values for .Sub configs")
 	}
 	val := config.get(key)
 	if val == nil {
@@ -353,17 +365,20 @@ func (config *Config) UnmarshalYAML(value *yaml.Node) error {
 
 		// Access the key and value
 		key := keyNode.Value
-		fmt.Printf("Key: %s\n", key)
+		log.Printf("Key: %s\n", key)
 
 		var err error
 		switch key {
 		case "services":
 			config.services, err = parseServicesConfig(valueNode)
-			if err != nil {
-				return err
-			}
+		case "email":
+			// TODO: overwrite with env
+			err = valueNode.Decode(&config.EmailConf)
 		default:
-			fmt.Printf("Unexpected key %v\n", key)
+			log.Printf("Unexpected key %v\n", key)
+		}
+		if err != nil {
+			return err
 		}
 	}
 
@@ -372,20 +387,23 @@ func (config *Config) UnmarshalYAML(value *yaml.Node) error {
 	return err
 }
 
+// Parse config from YAML and override using ENV variables
 func ConfigFromBytes(data []byte) (*Config, error) {
 	config := NewConfig()
 	err := yaml.Unmarshal(data, config)
 	if err != nil {
 		return nil, err
 	}
-	// todo: improve; quick hack to hide SMTP password in logging
-	if config.IsSet("email") {
-		emailConfig := config.Sub("email")
-		if emailConfig.IsSet("smtp_password") {
-			config.settings["email"].(map[string]any)["smtp_password"] = Secret{
-				value: emailConfig.GetString("smtp_password"),
+	err = env.ParseWithOptions(config, env.Options{
+		Prefix: ENV_VAR_PREFIX,
+		OnSet: func(tag string, value interface{}, isDefault bool) {
+			if value != nil {
+				log.Printf("[env] Set %s\n", tag)
 			}
-		}
+		},
+	})
+	if err != nil {
+		return nil, err
 	}
 	log.Println(">>>>", config, "<<<<")
 	return config, err

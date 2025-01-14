@@ -14,7 +14,7 @@ type SMTPMailer struct {
 	Server SMTPServer
 }
 
-func (sm SMTPMailer) Send(reports []ServiceReport, emailConfig *conf.Config) error {
+func (sm SMTPMailer) Send(reports []ServiceReport, emailConfig *conf.EmailConfig) error {
 	var buffer bytes.Buffer
 
 	log.Printf("[SMTPMailer] Generating report")
@@ -23,22 +23,18 @@ func (sm SMTPMailer) Send(reports []ServiceReport, emailConfig *conf.Config) err
 		return err
 	}
 
-	prefix := ""
-	if emailConfig.IsSet("prefix") {
-		prefix = emailConfig.GetString("prefix")
-	}
+	prefix := emailConfig.Prefix
 	// add whitespace after prefix if it exists and is not included already
 	if prefix != "" && !strings.HasSuffix(prefix, " ") {
 		prefix = prefix + " "
 	}
 
 	subject := fmt.Sprintf("%sBeacon: Status Report", prefix)
-	target := emailConfig.GetString("send_to")
-	log.Printf("[SMTPMailer] Sending email with subject %q to %q", subject, target)
+	log.Printf("[SMTPMailer] Sending email with subject %q to %q", subject, emailConfig.SendTo)
 	err = SendMail(
 		sm.Server,
-		emailConfig.GetString("sender"),
-		target,
+		emailConfig.Sender,
+		emailConfig.SendTo,
 		subject,
 		buffer.String(),
 	)
@@ -54,16 +50,16 @@ type SMTPServer struct {
 	server   string
 	port     string
 	username string
-	password string
+	password conf.Secret
 }
 
 // Load the SMTP server details from config
-func LoadServer(emailConfig *conf.Config) (SMTPServer, error) {
+func LoadServer(emailConfig *conf.EmailConfig) (SMTPServer, error) {
 	return SMTPServer{
-		server:   emailConfig.GetString("SMTP_SERVER"),
-		port:     emailConfig.GetString("SMTP_PORT"),
-		username: emailConfig.GetString("SMTP_USERNAME"),
-		password: emailConfig.GetString("SMTP_PASSWORD"),
+		server:   emailConfig.SmtpServer,
+		port:     fmt.Sprint(emailConfig.SmtpPort),
+		username: emailConfig.SmtpUsername,
+		password: emailConfig.SmtpPassword,
 	}, nil
 }
 
@@ -77,7 +73,7 @@ func SendMail(server SMTPServer, sender string, target string, subject string, b
 		mime + "\n\n" + body
 
 	// Connect to the SMTP server
-	auth := smtp.PlainAuth("", server.username, server.password, server.server)
+	auth := smtp.PlainAuth("", server.username, server.password.Get(), server.server)
 	err := smtp.SendMail(server.server+":"+server.port, auth, sender, []string{target}, []byte(msg))
 	return err
 }

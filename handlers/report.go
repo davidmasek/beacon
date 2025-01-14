@@ -82,7 +82,7 @@ func sendEmail(config *conf.Config, reports []ServiceReport) error {
 		err := fmt.Errorf("no email configuration provided")
 		return err
 	}
-	server, err := LoadServer(config.Sub("email"))
+	server, err := LoadServer(&config.EmailConf)
 	if err != nil {
 		err := fmt.Errorf("failed to load SMTP server: %w", err)
 		return err
@@ -90,7 +90,7 @@ func sendEmail(config *conf.Config, reports []ServiceReport) error {
 	mailer := SMTPMailer{
 		Server: server,
 	}
-	return mailer.Send(reports, config.Sub("email"))
+	return mailer.Send(reports, &config.EmailConf)
 }
 
 // Generate, save and send report.
@@ -116,7 +116,7 @@ func DoReportTask(db storage.Storage, config *conf.Config, now time.Time) error 
 	// TODO: need better way so check if should send email
 	// currently the config.IsSet handles the "config-file path"
 	// and allows overwrite via config "send-mail" variable for CLI usage
-	shouldSendEmail := config.Sub("email").IsSet("smtp_password")
+	shouldSendEmail := config.EmailConf.SmtpPassword.IsSet()
 	if config.IsSet("send-mail") {
 		shouldSendEmail = config.GetBool("send-mail")
 	}
