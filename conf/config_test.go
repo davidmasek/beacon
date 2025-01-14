@@ -34,11 +34,11 @@ func TestEnvVariablesOverwrite(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, config)
 
-	require.True(t, config.IsSet("email"), config)
-	emailConfig := config.Sub("email")
-	t.Log(emailConfig.AllSettings())
-	assert.Equal(t, "my-new-prefix", emailConfig.GetString("prefix"), emailConfig)
-	assert.Equal(t, 123, emailConfig.GetInt("smtp_port"), emailConfig)
+	emailConfig := config.EmailConf
+	t.Log(emailConfig)
+	t.Log("^^^^^^^^^^^^^^^^^^^^^^")
+	assert.Equal(t, "my-new-prefix", emailConfig.Prefix)
+	assert.Equal(t, 123, emailConfig.SmtpPort)
 }
 
 func TestUnmarshal(t *testing.T) {
@@ -50,11 +50,12 @@ services:
     enabled: true
 
 email:
-  user: david
+  smtp_username: david
 
 testing: true`)
 	err := yaml.Unmarshal(data, config)
 	require.NoError(t, err)
+	require.Equal(t, "david", config.EmailConf.SmtpUsername)
 }
 
 func TestParsingKeepsOrder(t *testing.T) {
@@ -74,49 +75,6 @@ services:
 		names = append(names, service.Id)
 	}
 	require.Equal(t, expectedNames, names)
-}
-
-func TestConfigGet(t *testing.T) {
-	config := NewConfig()
-	data := `
-bedroom: bed
-kitchen:
-  fruit: apple
-  vegetable: cucumber
-  table:
-`
-	err := yaml.Unmarshal([]byte(data), config.settings)
-	require.NoError(t, err)
-	require.NotNil(t, config)
-	t.Log(config)
-
-	require.True(t, config.IsSet("bedroom"))
-	require.True(t, config.IsSet("kitchen"))
-	require.Equal(t, "bed", config.GetString("bedroom"))
-
-	settings := config.AllSettings()
-	require.Contains(t, settings, "bedroom")
-	require.Contains(t, settings, "kitchen")
-
-	kitchen := config.get("kitchen")
-	require.NotNil(t, kitchen)
-	t.Log(kitchen)
-
-	kitchenConfig := config.Sub("kitchen")
-	require.NotNil(t, kitchenConfig)
-	t.Log(kitchenConfig)
-
-	require.True(t, kitchenConfig.IsSet("fruit"))
-	require.True(t, kitchenConfig.IsSet("vegetable"))
-	require.Equal(t, "apple", kitchenConfig.GetString("fruit"))
-	// todo: Config rethink... the following will return false by design
-	// but the key exists!
-	// require.True(t, kitchenConfig.IsSet("table"))
-	// but for our use case it is more important that the following works:
-	settings = kitchenConfig.AllSettings()
-	require.Contains(t, settings, "fruit")
-	require.Contains(t, settings, "vegetable")
-	require.Contains(t, settings, "table")
 }
 
 func TestConfigSet(t *testing.T) {
@@ -144,4 +102,32 @@ func TestSecretPrint(t *testing.T) {
 	assert.NotContains(t, fmt.Sprintf("%v", config), "Greg")
 	assert.NotContains(t, fmt.Sprintf("%+v", config), "Greg")
 	assert.NotContains(t, fmt.Sprintf("%#v", config), "Greg")
+}
+
+func TestParseEmailConfig(t *testing.T) {
+	src := `
+smtp_server: mail.smtp2go.com
+smtp_port: 587
+smtp_username: beacon
+smtp_password: h4xor
+send_to: you@example.fake
+sender: noreply@example.fake
+prefix: "[test]"
+`
+	emailConfig := EmailConfig{}
+	err := yaml.Unmarshal([]byte(src), &emailConfig)
+	require.NoError(t, err)
+	t.Logf("%#v\n", emailConfig)
+	require.NotContains(t, fmt.Sprintf("%#v", emailConfig), "h4xor",
+		"Password (secret) value should not be logged")
+	require.Equal(t, emailConfig, EmailConfig{
+		"mail.smtp2go.com",
+		587,
+		"beacon",
+		Secret{"h4xor"},
+		"you@example.fake",
+		"noreply@example.fake",
+		"[test]",
+	})
+	require.Equal(t, "h4xor", emailConfig.SmtpPassword.Get())
 }
