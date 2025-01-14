@@ -4,20 +4,13 @@ This documents describes some internals, implementation details, and tries it's 
 
 You should start with the main [README](README.md).
 
-TODO: for sending email it might be actually nice to calculate the date of "NEXT" send and keep that in DB
-- and on homepage we could have
-- "Last report send at XXX"
-- "Next report should be send at YYY"
-- "Server time is ZZZ"
-
-
 ## 🚧 Feature list:
 - 🟢 heartbeat listener
   - 🟢 HTTP server
   - 🟢 persistence
-  - 🟡 stable API
+  - 🟢 stable API
     - 🟢 needs finalization on "heartbeat"-only endpoints
-    - 🔴 stabilize response - use JSON
+    - 🟢 stabilize response - use JSON
     - 🟤 later: needs endpoints for HealthCheck
     - 🟢 go with `/services/<id>/action` structure
 - 🟢 web GUI
@@ -30,7 +23,7 @@ TODO: for sending email it might be actually nice to calculate the date of "NEXT
   - needs more testing
 - 🟡 reports
   - 🟢 basic flow
-  - 🔴 should take config file into account (currently only looks at DB)
+  - 🟢 should take config file into account (currently only looks at DB)
 - 🟡 heartbeat/website management
   - 🟢 specified in config
   - 🟡 some support for "manual" services without config - for heartbeats only
@@ -44,19 +37,20 @@ TODO: for sending email it might be actually nice to calculate the date of "NEXT
   - 🟢 DB prepared
   - would enable multi-user server
   - would enable public server
-  - 🔴 auth
-- 🔴 friendly app configuration / documentation
-  - 🔴 TODO: DB needs some documentation
-  - 🟡 TODO: relative file paths need some handling
+  - 🟡 auth
+  - 🟤 actual usage of users
+  - 🟤 registration / login
+- 🟡 friendly app configuration / documentation
+  - 🟡 DB needs some documentation
+  - 🟢 relative file paths handled
   - 🟡 some "test my config file" functionality would be nice
-  - 🔴 config file refactor
-    - 🔴 config file should be required, but provided by default (inside homedir?)
-    - 🔴 some utilities could be provided to check it / update it
+  - 🟢 config file refactor
+    - 🟢 config file should be required, but provided by default (inside homedir?)
   - 🟢 config format done
   - 🟢 main documentation done
   - 🟡 needs some user-testing to make sure it makes sense
   - 🟤 later: swagger API docs?
-  - 🟡 docker + dockerhub
+  - 🟢 docker + dockerhub
 - 🟢 notifications
   - 🟢 email reporting
   - 🟢 local HTML report
@@ -65,10 +59,10 @@ TODO: for sending email it might be actually nice to calculate the date of "NEXT
   - 🟢 basic github setup
   - 🟢 CI for building/testing 
   - need more time to verify / refine
-  - 🔴 stabilize DB + versioning/migrations
+  - 🟡 stabilize DB + versioning/migrations
 - 🟡 testing
   - 🟢 unit tests for storage
-  - 🟡 unit tests for CLI (TODO: test)
+  - 🟢 unit tests for CLI
   - 🟡 end-to-end "Go" test
     - done for heartbeat
     - want for web
