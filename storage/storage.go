@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -16,6 +17,8 @@ import (
 
 //go:embed create.sql
 var CREATE_TABLE_QUERY string
+
+const DUMMY_HASH = "$argon2id$v=19$m=65536,t=1,p=1$3/5E2tseeHN7AkROAl3Gvw$9a3DHFWwhpyuQp9/2t1VCESFVR/vxty/nQ1G55eeATA"
 
 // Data needed to persist a new HealthCheck
 type HealthCheckInput struct {
@@ -156,6 +159,9 @@ func (s *SQLStorage) LatestTaskLog(taskName string) (*Task, error) {
 }
 
 func (s *SQLStorage) CreateUser(email string, password string) error {
+	if password == "" {
+		return fmt.Errorf("cannot create user with empty password")
+	}
 	hashedPassword, err := GenerateFromPassword(password)
 	if err != nil {
 		return err
@@ -167,20 +173,31 @@ func (s *SQLStorage) CreateUser(email string, password string) error {
 	return err
 }
 
-func (s *SQLStorage) ValidateUser(email string, password string) (*User, error) {
+func (s *SQLStorage) ValidateUser(email string, inputPassword string) (*User, error) {
 	query := `SELECT password_hash FROM users WHERE email = ?`
 
 	// QueryRow is used because we expect at most one result
 	row := s.db.QueryRow(query, email)
 
-	var passwordHash string
-	err := row.Scan(&passwordHash)
+	var referenceHash string
+	err := row.Scan(&referenceHash)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			// no user found
-			return nil, nil
+			// no user found, do a comparison to simulate same timing
+			// as if user found
+			_, err = ComparePasswordAndHash(inputPassword, DUMMY_HASH)
+			// typically nil,nil
+			return nil, err
 		}
 		return nil, err
+	}
+
+	match, err := ComparePasswordAndHash(inputPassword, referenceHash)
+	if err != nil {
+		return nil, err
+	}
+	if !match {
+		return nil, nil
 	}
 	return &User{email: email}, nil
 }

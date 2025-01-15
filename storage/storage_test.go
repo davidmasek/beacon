@@ -303,3 +303,67 @@ func TestTaskLog(t *testing.T) {
 	require.WithinDuration(t, now, gotTask.Timestamp, time.Second)
 	require.Equal(t, newStatus, gotTask.Status)
 }
+
+// Operations on empty database work.
+func TestEmptyDb(t *testing.T) {
+	db := NewTestDb(t)
+	defer db.Close()
+
+	hash, _ := GenerateFromPassword("not-relevant")
+	t.Log(hash)
+	t.Log("--------------")
+
+	out, err := db.GetLatestHeartbeats("service", 10)
+	require.NoError(t, err)
+	require.Len(t, out, 0)
+
+	healthCheck, err := db.LatestHealthCheck("service")
+	require.NoError(t, err)
+	require.Nil(t, healthCheck)
+
+	healthChecks, err := db.LatestHealthChecks("service", 10)
+	require.NoError(t, err)
+	require.Len(t, healthChecks, 0)
+
+	task, err := db.LatestTaskLog("task")
+	require.NoError(t, err)
+	require.Nil(t, task)
+
+	task, err = db.LatestTaskLogWithStatus("task", "status")
+	require.NoError(t, err)
+	require.Nil(t, task)
+
+	services, err := db.ListServices()
+	require.NoError(t, err)
+	require.Len(t, services, 0)
+
+	user, err := db.ValidateUser("email", "password")
+	require.NoError(t, err)
+	require.Nil(t, user)
+}
+
+func TestUserFlow(t *testing.T) {
+	db := NewTestDb(t)
+	defer db.Close()
+
+	// happy path
+	err := db.CreateUser("cj@google.com", "h4xor")
+	require.NoError(t, err)
+	user, err := db.ValidateUser("cj@google.com", "h4xor")
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	require.Equal(t, "cj@google.com", user.email)
+
+	// with invalid password
+	user, err = db.ValidateUser("cj@google.com", "idk")
+	require.NoError(t, err)
+	require.Nil(t, user)
+
+	// already existing email
+	err = db.CreateUser("cj@google.com", "any")
+	require.Error(t, err)
+
+	// empty password
+	err = db.CreateUser("don.john.von.lon@google.com", "")
+	require.Error(t, err)
+}
