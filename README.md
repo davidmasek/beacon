@@ -249,6 +249,8 @@ go test ./...
 go test -v ./...
 # disable cache
 go test -count=1 ./...
+# with code coverage
+go test ./... -coverprofile cover.out
 ```
 
 Additionally there is a test script for Docker. This script has two goals. First, it tests
@@ -269,9 +271,9 @@ Run testing script for Docker:
 ```sh
 # cpu only
 go test -cpuprofile=cpu.out ./scheduler
-go tool pprof -http=:8080 scheduler.test cpu.out
+go tool pprof -http=:8080 ./scheduler.test cpu.out
 # including blocking calls
-go test -cpuprofile=cpu.out ./scheduler
+go test -blockprofile=cpu.out ./scheduler
 go tool pprof -http=:8080 ./scheduler.test block.out
 # with trace, open "Goroutines" on the webpage
 go test -trace=trace.out ./scheduler
