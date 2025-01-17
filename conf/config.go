@@ -39,15 +39,15 @@ func (s *Secret) IsSet() bool {
 }
 
 type EmailConfig struct {
-	SmtpServer   string `yaml:"smtp_server" env:"EMAIL_SMTP_SERVER"`
-	SmtpPort     int    `yaml:"smtp_port" env:"EMAIL_SMTP_PORT"`
-	SmtpUsername string `yaml:"smtp_username" env:"EMAIL_SMTP_USERNAME"`
-	SmtpPassword Secret `yaml:"smtp_password" env:"EMAIL_SMTP_PASSWORD"`
-	SendTo       string `yaml:"send_to" env:"EMAIL_SEND_TO"`
-	Sender       string `yaml:"sender" env:"EMAIL_SENDER"`
-	Prefix       string `yaml:"prefix" env:"EMAIL_PREFIX"`
+	SmtpServer   string `yaml:"smtp_server" env:"SMTP_SERVER"`
+	SmtpPort     int    `yaml:"smtp_port" env:"SMTP_PORT"`
+	SmtpUsername string `yaml:"smtp_username" env:"SMTP_USERNAME"`
+    SmtpPassword Secret `yaml:"smtp_password" env:"SMTP_PASSWORD"`
+	SendTo       string `yaml:"send_to" env:"SEND_TO"`
+	Sender       string `yaml:"sender" env:"SENDER"`
+	Prefix       string `yaml:"prefix" env:"PREFIX"`
 	// not bool to allow more flexible usage
-	Enabled string `yaml:"enabled" env:"EMAIL_ENABLED"`
+	Enabled string `yaml:"enabled" env:"ENABLED"`
 }
 
 func (emailConf *EmailConfig) IsEnabled() bool {
@@ -86,7 +86,7 @@ type Config struct {
 	Port            int           `yaml:"port" env:"PORT"`
 	SchedulerPeriod time.Duration `yaml:"scheduler_period" env:"SCHEDULER_PERIOD"`
 
-	EmailConf EmailConfig `yaml:"email"`
+    EmailConf EmailConfig `yaml:"email" envPrefix:"EMAIL_"`
 
 	Services ServicesList
 
