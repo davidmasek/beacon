@@ -139,7 +139,7 @@ email:
 
 You can use **environment variables** instead. For example:
 ```sh
-export BEACON_SMTP_PASSWORD="your-password"
+export BEACON_EMAIL_SMTP_PASSWORD="your-password"
 ```
 
 ### Configuration sources
