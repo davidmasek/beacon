@@ -142,6 +142,11 @@ You can use **environment variables** instead. For example:
 export BEACON_EMAIL_SMTP_PASSWORD="your-password"
 ```
 
+For password, you can instead provide a file containing the password.
+```sh
+export BEACON_EMAIL_SMTP_PASSWORD_FILE="/path/to/password-file"
+```
+
 ### Configuration sources
 
 Beacon supports multiple configuration sources, with the following priority (highest to lowest):

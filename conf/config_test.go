@@ -102,7 +102,7 @@ services:
 }
 
 func TestSecretPrint(t *testing.T) {
-	secret := Secret{"Greg"}
+	secret := Secret{"Greg", ""}
 	assert.Equal(t, secret.Get(), "Greg")
 	assert.NotContains(t, fmt.Sprint(secret), "Greg")
 	assert.NotContains(t, fmt.Sprint(&secret), "Greg")
@@ -143,7 +143,7 @@ prefix: "[test]"
 		"mail.smtp2go.com",
 		587,
 		"beacon",
-		Secret{"h4xor"},
+		Secret{"h4xor", ""},
 		"you@example.fake",
 		"noreply@example.fake",
 		"[test]",
@@ -159,4 +159,28 @@ func TestSecretFromEnv(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "secr4t", conf.EmailConf.SmtpPassword.Get())
 
+}
+
+func TestSecretFromFile(t *testing.T) {
+	// Create the file
+	f, err := os.Create("secret-test.txt")
+	require.NoError(t, err)
+	_, err = f.WriteString("foo\n")
+	require.NoError(t, err)
+
+	// Set both, file should have prio
+	err = os.Setenv("BEACON_EMAIL_SMTP_PASSWORD", "bar")
+	require.NoError(t, err)
+	err = os.Setenv("BEACON_EMAIL_SMTP_PASSWORD_FILE", "secret-test.txt")
+	require.NoError(t, err)
+
+	conf, err := ConfigFromBytes([]byte(""))
+	require.NoError(t, err)
+	require.Equal(t, "foo", conf.EmailConf.SmtpPassword.Get())
+
+	// Cleanup
+	err = os.Unsetenv("BEACON_EMAIL_SMTP_PASSWORD_FILE")
+	require.NoError(t, err)
+	err = os.Remove("secret-test.txt")
+	require.NoError(t, err)
 }

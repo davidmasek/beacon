@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"reflect"
+	"strings"
 	"time"
 
 	"github.com/caarlos0/env/v11"
@@ -19,7 +19,8 @@ import (
 const ENV_VAR_PREFIX = "BEACON_"
 
 type Secret struct {
-	value string
+	Value    string `env:""`
+	FromFile string `env:"_FILE,file"`
 }
 
 func (s Secret) String() string {
@@ -31,18 +32,23 @@ func (s Secret) GoString() string {
 }
 
 func (s *Secret) Get() string {
-	return s.value
+	if s.FromFile != "" {
+		// File contents tend to end with newline
+		return strings.TrimSpace(s.FromFile)
+	} else {
+		return s.Value
+	}
 }
 
 func (s *Secret) IsSet() bool {
-	return s.value != ""
+	return s.Value != "" || s.FromFile != ""
 }
 
 type EmailConfig struct {
 	SmtpServer   string `yaml:"smtp_server" env:"SMTP_SERVER"`
 	SmtpPort     int    `yaml:"smtp_port" env:"SMTP_PORT"`
 	SmtpUsername string `yaml:"smtp_username" env:"SMTP_USERNAME"`
-    SmtpPassword Secret `yaml:"smtp_password" env:"SMTP_PASSWORD"`
+	SmtpPassword Secret `yaml:"smtp_password" envPrefix:"SMTP_PASSWORD"`
 	SendTo       string `yaml:"send_to" env:"SEND_TO"`
 	Sender       string `yaml:"sender" env:"SENDER"`
 	Prefix       string `yaml:"prefix" env:"PREFIX"`
@@ -66,8 +72,12 @@ func (s *Secret) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.ScalarNode {
 		return fmt.Errorf("expected scalar node got %s", node.Value)
 	}
-	s.value = node.Value
+	s.Value = node.Value
 	return nil
+}
+
+func (s Secret) MarshalYAML() (interface{}, error) {
+	return "*****", nil
 }
 
 // TzLocation wraps a *time.Location so we can provide custom YAML unmarshalling.
@@ -86,7 +96,7 @@ type Config struct {
 	Port            int           `yaml:"port" env:"PORT"`
 	SchedulerPeriod time.Duration `yaml:"scheduler_period" env:"SCHEDULER_PERIOD"`
 
-    EmailConf EmailConfig `yaml:"email" envPrefix:"EMAIL_"`
+	EmailConf EmailConfig `yaml:"email" envPrefix:"EMAIL_"`
 
 	Services ServicesList
 
@@ -216,11 +226,6 @@ func ConfigFromBytes(data []byte) (*Config, error) {
 	}
 	err = env.ParseWithOptions(config, env.Options{
 		Prefix: ENV_VAR_PREFIX,
-		FuncMap: map[reflect.Type]env.ParserFunc{
-			reflect.TypeOf(Secret{}): func(v string) (interface{}, error) {
-				return Secret{v}, nil
-			},
-		},
 	})
 	if err != nil {
 		return nil, err
