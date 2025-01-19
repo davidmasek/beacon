@@ -6,8 +6,6 @@ services:
     content:
       - Beacon
   beacon-periodic-checker:
-  example-with-extras:
-    timeout: 48h
   example-basic-web:
     url: "https://httpbin.org/get"
   example-temp-disable:
@@ -16,15 +14,15 @@ services:
 
 
 email:
-  smtp_server: mail.smtp2go.com
-  smtp_port: 587
+  smtp_server: smtp4dev
+  smtp_port: 25
   smtp_username: beacon
-  smtp_password:
+  smtp_password: beacon
   send_to: you@example.fake
   sender: noreply@example.fake
-  prefix: "[dev]"
+  prefix: "[beacon-example]"
   # defaults to sending email
-  enabled: false
+  enabled: true
 
 # examples: UTC, Australia/Sydney, America/Chicago
 timezone: "Europe/Prague"

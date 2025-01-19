@@ -148,6 +148,7 @@ prefix: "[test]"
 		"noreply@example.fake",
 		"[test]",
 		"",
+		"",
 	})
 	require.Equal(t, "h4xor", emailConfig.SmtpPassword.Get())
 }

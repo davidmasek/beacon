@@ -25,8 +25,6 @@ func TestExampleConfigServices(t *testing.T) {
 	assert.Equal(t, services["beacon-github"].HttpStatus, []int{200})
 	assert.Equal(t, services["beacon-github"].Timeout, 24*time.Hour)
 
-	assert.Equal(t, services["example-with-extras"].Timeout, 48*time.Hour)
-
 	assert.Equal(t, services["example-basic-web"].Url, "https://httpbin.org/get")
 	// test default value (200 OK) gets assigned
 	assert.Equal(t, []int{200}, services["example-basic-web"].HttpStatus)

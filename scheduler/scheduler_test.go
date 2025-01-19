@@ -18,6 +18,8 @@ func TestRunSingle(t *testing.T) {
 	defer db.Close()
 	config, err := conf.ExampleConfig()
 	require.NoError(t, err)
+	// disable emails for the test
+	config.EmailConf.Enabled = "false"
 
 	tmp, err := os.CreateTemp("", "beacon-test-report-*.html")
 	require.NoError(t, err)

@@ -54,6 +54,8 @@ type EmailConfig struct {
 	Prefix       string `yaml:"prefix" env:"PREFIX"`
 	// not bool to allow more flexible usage
 	Enabled string `yaml:"enabled" env:"ENABLED"`
+	// "never", "beacon", "allow"
+	TlsInsecure string `yaml:"tls_insecure" env:"TLS_INSECURE"`
 }
 
 func (emailConf *EmailConfig) IsEnabled() bool {
