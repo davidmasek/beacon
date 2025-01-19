@@ -19,6 +19,9 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # -----------------------------------
 FROM debian:bookworm-slim AS main
 
+# Install:
+# - certificates - needed to send emails securely
+# - curl - useful for testing
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl \
     && apt-get clean \
@@ -30,7 +33,7 @@ COPY --from=builder /app/beacon /app/beacon
 
 WORKDIR /app
 
-ENV BEACON_DB=/app/beacon.db
+ENV BEACON_DB=/app/db/beacon.db
 
 ENTRYPOINT ["/app/beacon"]
 CMD ["start", "--config", "/app/beacon.yaml"]

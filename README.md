@@ -39,7 +39,7 @@ beacon start --config config.sample.yaml
 
 ### Docker
 
-Beacon is also available as a Docker container. [`compose.yaml`](./compose.yaml) provides an example of using it with Docker Compose and latest image available from [Docker Hub](https://hub.docker.com/r/davidmasek42/beacon).
+Beacon is also available as a Docker container. [`compose.yaml`](./compose.yaml) provides an example of using it with Docker Compose. The setup is runnable as-is and is intended for testing and development. For production I would recommend using images available from [Docker Hub](https://hub.docker.com/r/davidmasek42/beacon) and mounting database directory (`/app/db/`) for persistent storage.
 
 ```sh
 docker compose up
@@ -258,17 +258,23 @@ go test -count=1 ./...
 go test ./... -coverprofile cover.out
 ```
 
-Additionally there is a test script for Docker. This script has two goals. First, it tests
+Additionally there is a script for integration testing using Docker. This script has two goals. First, it tests
 that the Docker image can be build and starts correctly, ensuring people can use Beacon via Docker.
 Second, it runs Beacon in a clean environment, which helps catch problems that might be hidden
 during local development.
 
-The `test_docker.sh` script also tests sending email. For this, valid SMTP configuration is required.
-See the script source if you are interested in running it.
-
 Run testing script for Docker:
 ```sh
-./test_docker.sh
+# tested with Python 3.10, any recent Python should work
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.dev.txt
+# the script:
+# 1. stops currently running containers with `docker compose down`
+# 2. rebuilds the containers
+# 3. runs tests
+# 4. keeps containers running (for inspection, if needed)
+python test_docker.py
 ```
 
 ### Profiling

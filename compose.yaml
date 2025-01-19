@@ -1,9 +1,34 @@
 services:
   beacon:
-    image: davidmasek42/beacon:latest
+    # Uncomment the following line and remove the "build" section to use image from Docker Hub
+    # image: davidmasek42/beacon:latest    
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8088:8088" # web GUI + API
     volumes:
-      # make sure both files exist, otherwise docker will not mount them correctly
-      - ./beacon.yaml:/app/beacon.yaml # config file
-      - ./beacon.db:/app/beacon.db # persist DB
+      # Make sure the file exist, otherwise docker will mount the path as directory
+      - ./config.sample.yaml:/app/beacon.yaml # config file
+      # Uncomment the following line to persist DB
+      # - ./beacon-db/:/app/db/
+    environment:
+      # Allow insecure TLS if username is "beacon". Remove this in production.
+      - BEACON_EMAIL_TLS_INSECURE=beacon
+
+  # SMTP server for development and testing.
+  # For production configure your SMTP inside the Beacon config file instead.
+  smtp4dev:
+    image: rnwood/smtp4dev:v3
+    ports:
+      # Change the number before : to the port the web interface should be accessible on
+      - '5080:80'
+      # # Change the number before : to the port the SMTP server should be accessible on
+      # - '5025:25'
+      # # Change the number before : to the port the IMAP server should be accessible on
+      # - '5143:13'
+    environment:
+      - ServerOptions__HostName=smtp4dev
+      - ServerOptions__TlsMode=StartTls
+      - RelayOptions__Login="beacon"
+      - RelayOptions__Password="beacon"

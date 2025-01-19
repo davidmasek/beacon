@@ -77,14 +77,6 @@ func GenerateReport(db storage.Storage) ([]ServiceReport, error) {
 	return reports, nil
 }
 
-func sendEmail(config *conf.Config, reports []ServiceReport) error {
-	server := LoadServer(&config.EmailConf)
-	mailer := SMTPMailer{
-		Server: server,
-	}
-	return mailer.Send(reports, &config.EmailConf)
-}
-
 // Generate, save and send report.
 //
 // See ShouldReport to check if this task should be run.
@@ -109,7 +101,7 @@ func DoReportTask(db storage.Storage, config *conf.Config, now time.Time) error 
 
 	shouldSendEmail := config.EmailConf.IsEnabled()
 	if shouldSendEmail {
-		emailErr := sendEmail(config, reports)
+		emailErr := SendReport(reports, &config.EmailConf)
 		err = errors.Join(err, emailErr)
 	}
 

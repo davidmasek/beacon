@@ -2,19 +2,16 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"log"
-	"net/smtp"
 	"strings"
 
 	"github.com/davidmasek/beacon/conf"
+	"github.com/wneessen/go-mail"
 )
 
-type SMTPMailer struct {
-	Server SMTPServer
-}
-
-func (sm SMTPMailer) Send(reports []ServiceReport, emailConfig *conf.EmailConfig) error {
+func SendReport(reports []ServiceReport, emailConfig *conf.EmailConfig) error {
 	var buffer bytes.Buffer
 
 	log.Printf("[SMTPMailer] Generating report")
@@ -30,50 +27,51 @@ func (sm SMTPMailer) Send(reports []ServiceReport, emailConfig *conf.EmailConfig
 	}
 
 	subject := fmt.Sprintf("%sBeacon: Status Report", prefix)
-	log.Printf("[SMTPMailer] Sending email with subject %q to %q", subject, emailConfig.SendTo)
 	err = SendMail(
-		sm.Server,
-		emailConfig.Sender,
-		emailConfig.SendTo,
+		emailConfig,
 		subject,
 		buffer.String(),
 	)
+	return err
+}
+
+func SendMail(emailConfig *conf.EmailConfig, subject string, body string) error {
+	log.Printf("Sending email with subject %q to %q", subject, emailConfig.SendTo)
+
+	message := mail.NewMsg()
+	if err := message.From(emailConfig.Sender); err != nil {
+		return err
+	}
+	if err := message.To(emailConfig.SendTo); err != nil {
+		return err
+	}
+	message.Subject(subject)
+	message.SetBodyString(mail.TypeTextHTML, body)
+
+	client, err := mail.NewClient(emailConfig.SmtpServer, mail.WithSMTPAuth(mail.SMTPAuthPlain),
+		mail.WithUsername(emailConfig.SmtpUsername), mail.WithPassword(emailConfig.SmtpPassword.Get()),
+		mail.WithPort(emailConfig.SmtpPort),
+	)
 	if err != nil {
-		log.Printf("[SMTPMailer] Failed to send email: %v", err)
 		return err
 	}
 
-	return nil
-}
-
-type SMTPServer struct {
-	server   string
-	port     string
-	username string
-	password conf.Secret
-}
-
-// Load the SMTP server details from config
-func LoadServer(emailConfig *conf.EmailConfig) SMTPServer {
-	return SMTPServer{
-		server:   emailConfig.SmtpServer,
-		port:     fmt.Sprint(emailConfig.SmtpPort),
-		username: emailConfig.SmtpUsername,
-		password: emailConfig.SmtpPassword,
+	tlsSkipVerify := false
+	if emailConfig.TlsInsecure == "always" {
+		tlsSkipVerify = true
+	} else if emailConfig.TlsInsecure == "beacon" && emailConfig.SmtpUsername == "beacon" {
+		tlsSkipVerify = true
 	}
-}
+	if tlsSkipVerify {
+		client.SetTLSConfig(&tls.Config{
+			InsecureSkipVerify: true,
+		})
+	}
 
-func SendMail(server SMTPServer, sender string, target string, subject string, body string) error {
-	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\""
+	err = client.DialAndSend(message)
 
-	// Format the email message
-	msg := "From: " + sender + "\n" +
-		"To: " + target + "\n" +
-		"Subject: " + subject + "\n" +
-		mime + "\n\n" + body
-
-	// Connect to the SMTP server
-	auth := smtp.PlainAuth("", server.username, server.password.Get(), server.server)
-	err := smtp.SendMail(server.server+":"+server.port, auth, sender, []string{target}, []byte(msg))
+	if err != nil {
+		log.Printf("Failed to send email: %v", err)
+	}
 	return err
 }
