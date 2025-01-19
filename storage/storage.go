@@ -343,6 +343,12 @@ func (s *SQLStorage) LatestHealthCheck(serviceID string) (*HealthCheck, error) {
 }
 
 func NewSQLStorage(path string) (*SQLStorage, error) {
+	// Create parent directory if needed
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create directory %s: %w", dir, err)
+	}
+
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		return nil, err
