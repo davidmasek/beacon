@@ -32,10 +32,5 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	rootCmd.PersistentFlags().String("server", "http://localhost:8088", "Address of the target heartbeat server")
 	rootCmd.PersistentFlags().String("config", "", "Path to config file. If not specified, looks for beacon.yaml inside current and home directory.")
 }

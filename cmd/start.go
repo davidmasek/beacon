@@ -71,5 +71,4 @@ func init() {
 
 	startCmd.Flags().Int("port", 0, "Port where the server should run")
 	startCmd.Flags().Bool("stop", false, "Stop the server after starting")
-	startCmd.Flags().Bool("background", false, "Run in the background")
 }
