@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/davidmasek/beacon/conf"
+	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
 )
 
@@ -56,16 +57,12 @@ func GenerateReport(db storage.Storage) ([]ServiceReport, error) {
 	for _, service := range services {
 		log.Println("Checking service", service)
 		healthCheck, err := db.LatestHealthCheck(service)
-		if err != nil {
-			// TODO: should probably still include in the report with some explanation
+		var serviceStatus monitor.ServiceStatus
+		if err == nil {
+			serviceStatus = checkConfig.GetServiceStatus(healthCheck)
+		} else {
 			log.Println("[ERROR]", err)
-			continue
-		}
-		serviceStatus, err := checkConfig.GetServiceStatus(healthCheck)
-		if err != nil {
-			// TODO: should probably still include in the report with some explanation
-			log.Println("[ERROR]", err)
-			continue
+			serviceStatus = monitor.STATUS_OTHER
 		}
 		log.Println(" - Service status:", serviceStatus)
 

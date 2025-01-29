@@ -37,12 +37,7 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 				return
 			}
 
-			serviceStatus, err := serviceChecker.GetServiceStatus(healthCheck)
-			if err != nil {
-				log.Printf("Failed to calculate service status: %s", err)
-				http.Error(w, "Failed to calculate service status", http.StatusInternalServerError)
-				return
-			}
+			serviceStatus := serviceChecker.GetServiceStatus(healthCheck)
 
 			// Add service and its heartbeats to the list
 			services = append(services, ServiceStatus{
