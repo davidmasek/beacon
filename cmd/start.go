@@ -36,10 +36,12 @@ var startCmd = &cobra.Command{
 		}
 		defer db.Close()
 
-		// TODO: this currently overwrites other options
-		// that should happen only if specified
-		// Is it possible to distinguish with Cobra?
-		config.Port = port
+		// Overwrite existing config only if set on CLI.
+		// Prefer existing config otherwise, ignore the "Cobra" default.
+		portSet := cmd.Flag("port").Changed
+		if portSet {
+			config.Port = port
+		}
 		server, err := handlers.StartServer(db, config)
 		if err != nil {
 			return err
@@ -67,7 +69,7 @@ var startCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(startCmd)
 
-	startCmd.Flags().Int("port", 8088, "Port where the server should run")
+	startCmd.Flags().Int("port", 0, "Port where the server should run")
 	startCmd.Flags().Bool("stop", false, "Stop the server after starting")
 	startCmd.Flags().Bool("background", false, "Run in the background")
 }
