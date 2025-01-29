@@ -88,7 +88,6 @@ type TzLocation struct {
 }
 
 type Config struct {
-	// TODO: add examples to config + README
 	Timezone TzLocation `yaml:"timezone" env:"TIMEZONE"`
 	// report after n-th hour in the day
 	// e.g. 17 -> report after 5pm
