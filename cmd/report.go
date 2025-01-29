@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/davidmasek/beacon/handlers"
@@ -21,6 +22,14 @@ var reportCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		noMail, err := cmd.Flags().GetBool("no-mail")
+		if err != nil {
+			return err
+		}
+
+		if sendMail && noMail {
+			return fmt.Errorf("cannot set both --send-mail and --no-mail")
+		}
 
 		config, err := loadConfig(cmd)
 		if err != nil {
@@ -30,6 +39,9 @@ var reportCmd = &cobra.Command{
 		if sendMail {
 			// todo: figure out options for SendMail
 			config.EmailConf.Enabled = "yes"
+		}
+		if noMail {
+			config.EmailConf.Enabled = "no"
 		}
 		config.ReportName = reportName
 
@@ -46,5 +58,6 @@ func init() {
 	rootCmd.AddCommand(reportCmd)
 
 	reportCmd.Flags().Bool("send-mail", false, "Send email notifications")
+	reportCmd.Flags().Bool("no-mail", false, "Do not send email notifications")
 	reportCmd.Flags().String("name", "report", "Report name")
 }

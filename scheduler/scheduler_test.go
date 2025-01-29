@@ -38,7 +38,7 @@ func TestRunSingle(t *testing.T) {
 	t.Log(string(dat))
 	content := string(dat)
 	require.Contains(t, content, "<html")
-	// TODO: check service appears in HTML
+	require.Contains(t, content, "beacon-periodic-checker")
 }
 
 func TestSentinelCreatedOnlyOnce(t *testing.T) {

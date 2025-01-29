@@ -42,13 +42,10 @@ func NextReportTime(config *conf.Config, lastReportTime time.Time) time.Time {
 	return nextReportTime
 }
 
-func GenerateReport(db storage.Storage) ([]ServiceReport, error) {
+func GenerateReport(db storage.Storage, config *conf.Config) ([]ServiceReport, error) {
 	reports := make([]ServiceReport, 0)
 
-	services, err := db.ListServices()
-	if err != nil {
-		return nil, err
-	}
+	services := config.AllServices()
 
 	checkConfig := ServiceChecker{
 		Timeout: 24 * time.Hour,
@@ -56,7 +53,7 @@ func GenerateReport(db storage.Storage) ([]ServiceReport, error) {
 
 	for _, service := range services {
 		log.Println("Checking service", service)
-		healthCheck, err := db.LatestHealthCheck(service)
+		healthCheck, err := db.LatestHealthCheck(service.Id)
 		var serviceStatus monitor.ServiceStatus
 		if err == nil {
 			serviceStatus = checkConfig.GetServiceStatus(healthCheck)
@@ -67,7 +64,7 @@ func GenerateReport(db storage.Storage) ([]ServiceReport, error) {
 		log.Println(" - Service status:", serviceStatus)
 
 		reports = append(reports, ServiceReport{
-			ServiceId: service, ServiceStatus: serviceStatus, LatestHealthCheck: healthCheck,
+			ServiceId: service.Id, ServiceStatus: serviceStatus, LatestHealthCheck: healthCheck,
 		})
 	}
 
@@ -78,7 +75,7 @@ func GenerateReport(db storage.Storage) ([]ServiceReport, error) {
 //
 // See ShouldReport to check if this task should be run.
 func DoReportTask(db storage.Storage, config *conf.Config, now time.Time) error {
-	reports, err := GenerateReport(db)
+	reports, err := GenerateReport(db, config)
 	if err != nil {
 		return err
 	}

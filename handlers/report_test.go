@@ -14,6 +14,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var cfgInput = []byte(`
+services:
+  recent-beat-should-pass:
+  long-ago-should-fail:
+  with-bad-status-should-fail:
+  with-error-should-fail:
+  with-explicit-status-should-pass:
+`)
+
 var testServicesInput = []storage.HealthCheckInput{
 	{
 		ServiceId: "recent-beat-should-pass",
@@ -61,12 +70,15 @@ func TestWriteReport(t *testing.T) {
 	db := storage.NewTestDb(t)
 	defer db.Close()
 
+	config, err := conf.ConfigFromBytes(cfgInput)
+	require.NoError(t, err)
+
 	for _, input := range testServicesInput {
 		err := db.AddHealthCheck(&input)
 		require.NoError(t, err)
 	}
 
-	reports, err := GenerateReport(db)
+	reports, err := GenerateReport(db, config)
 	require.NoError(t, err)
 
 	assert.Len(t, reports, len(testServicesInput))
