@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime/debug"
 
+	"github.com/davidmasek/beacon/conf"
 	"github.com/spf13/cobra"
 )
 
@@ -17,6 +18,7 @@ var versionCmd = &cobra.Command{
 			return fmt.Errorf("cannot read build info")
 		}
 		cmd.Println("Beacon version:", info.Main.Version)
+		cmd.Println("Manually-specified version:", conf.GitRef, conf.GitSha)
 		return nil
 	},
 }

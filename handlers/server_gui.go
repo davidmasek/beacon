@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"embed"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -113,7 +114,10 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 
 		buildInfo, ok := debug.ReadBuildInfo()
 		var beaconVersion string
-		if ok {
+		// manually specified
+		if conf.GitRef != "" {
+			beaconVersion = fmt.Sprintf("%s-%s", conf.GitRef, conf.GitSha)
+		} else if ok { // auto-detect from .git
 			beaconVersion = buildInfo.Main.Version
 		} else {
 			beaconVersion = "unknown"

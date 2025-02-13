@@ -13,7 +13,8 @@ RUN --mount=type=cache,target=/root/go/pkg/mod \
 
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/go-build \
-    go build -o /app/beacon
+    go build -o /app/beacon \
+    -ldflags="-X 'conf.GitRef=${GIT_REF}' -X 'conf.GitSha=${GIT_SHA}'"
 
 # Stage 2: Main
 # -----------------------------------
