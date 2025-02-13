@@ -112,3 +112,20 @@ Some design choices:
     - conf
       - store/load configuration
       - name chosen to prevent naming variables `config` (not super happy about naming here)
+
+
+## Profiling
+
+Kept here for possible future reference.
+
+```sh
+# cpu only
+go test -cpuprofile=cpu.out ./scheduler
+go tool pprof -http=:8080 ./scheduler.test cpu.out
+# including blocking calls
+go test -blockprofile=cpu.out ./scheduler
+go tool pprof -http=:8080 ./scheduler.test block.out
+# with trace, open "Goroutines" on the webpage
+go test -trace=trace.out ./scheduler
+go tool trace trace.out
+```

@@ -283,17 +283,3 @@ python -m pip install -r requirements.dev.txt
 # 4. keeps containers running (for inspection, if needed)
 python test_docker.py
 ```
-
-### Profiling
-
-```sh
-# cpu only
-go test -cpuprofile=cpu.out ./scheduler
-go tool pprof -http=:8080 ./scheduler.test cpu.out
-# including blocking calls
-go test -blockprofile=cpu.out ./scheduler
-go tool pprof -http=:8080 ./scheduler.test block.out
-# with trace, open "Goroutines" on the webpage
-go test -trace=trace.out ./scheduler
-go tool trace trace.out
-```
