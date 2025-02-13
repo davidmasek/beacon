@@ -1,7 +1,7 @@
 *.md
 *.log
 *.txt
-.git
+# .git
 .github
 Dockerfile
 tmp
