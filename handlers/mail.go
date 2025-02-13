@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/davidmasek/beacon/conf"
+	"github.com/davidmasek/beacon/monitor"
 	"github.com/wneessen/go-mail"
 )
 
@@ -26,7 +27,22 @@ func SendReport(reports []ServiceReport, emailConfig *conf.EmailConfig) error {
 		prefix = prefix + " "
 	}
 
-	subject := fmt.Sprintf("%sBeacon: Status Report", prefix)
+	nServices := len(reports)
+	nGood := 0
+	for _, report := range reports {
+		if report.ServiceStatus == monitor.STATUS_OK {
+			nGood += 1
+		}
+	}
+
+	statusSummary := "Status Report"
+	if nServices == nGood {
+		statusSummary = "All Good"
+	} else {
+		statusSummary = "Service(s) Failed"
+	}
+
+	subject := fmt.Sprintf("%sBeacon: %s [%d/%d]", prefix, statusSummary, nGood, nServices)
 	err = SendMail(
 		emailConfig,
 		subject,
