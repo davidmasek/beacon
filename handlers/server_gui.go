@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"runtime/debug"
 	"time"
 
 	"github.com/davidmasek/beacon/conf"
@@ -109,6 +110,15 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 			http.Error(w, "Server error, please try again later", http.StatusInternalServerError)
 			return
 		}
+
+		buildInfo, ok := debug.ReadBuildInfo()
+		var beaconVersion string
+		if ok {
+			beaconVersion = buildInfo.Main.Version
+		} else {
+			beaconVersion = "unknown"
+		}
+
 		var lastReportTime, nextReportAfter string
 		lastReportStatus := ""
 		if lastReport == nil {
@@ -143,6 +153,7 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 			"Timezone":              config.Timezone.Location.String(),
 			"TimezoneAlt":           zone,
 			"TimezoneOffsetMinutes": offset / 60,
+			"BeaconVersion":         beaconVersion,
 		})
 		if err != nil {
 			log.Println("Failed to render", err)
