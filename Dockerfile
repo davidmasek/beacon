@@ -1,6 +1,6 @@
 # Stage 1: Builder
 # -----------------------------------
-FROM golang:1.23 AS builder
+FROM golang:1.24 AS builder
 
 WORKDIR /src
 
