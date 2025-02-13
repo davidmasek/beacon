@@ -4,6 +4,8 @@ This documents describes some internals, implementation details, and tries it's 
 
 You should start with the main [README](README.md).
 
+Beware that this file may be out of date.
+
 ## 🚧 Feature list:
 - 🟢 heartbeat listener
   - 🟢 HTTP server
@@ -16,23 +18,25 @@ You should start with the main [README](README.md).
 - 🟢 web GUI
   - 🟢 display the main information
   - ~~should also support management~~
-    - management will currently be supported only by CLI
+    - management will currently be supported only by config files
   - 🟡 support auth
   - 🟢 unify ports - run on same port as HB listener
 - 🟡 website monitor
-  - needs more testing
+  - yellow to keep an eye on testing/hardening
 - 🟡 reports
+  - yellow to keep eye on UX
   - 🟢 basic flow
   - 🟢 should take config file into account (currently only looks at DB)
 - 🟡 heartbeat/website management
+  - yellow - works, but need to decide if we want more features
   - 🟢 specified in config
   - 🟡 some support for "manual" services without config - for heartbeats only
     - up to debate if these should be kept
   - 🟤 delete old/unused service
 - 🟡 periodic website checking
+  -  yellow to keep an eye on testing/hardening
   - 🟢 basic version done
   - 🟢 should decouple "web scraping" and reporting
-  - requires more work to be nice
 - 🟡 user management
   - 🟢 DB prepared
   - would enable multi-user server
@@ -51,6 +55,7 @@ You should start with the main [README](README.md).
   - 🟡 needs some user-testing to make sure it makes sense
   - 🟤 later: swagger API docs?
   - 🟢 docker + dockerhub
+  - 🟢 version info available
 - 🟢 notifications
   - 🟢 email reporting
   - 🟢 local HTML report
@@ -67,16 +72,14 @@ You should start with the main [README](README.md).
     - done for heartbeat
     - want for web
     - maybe for reports in the future
-  - 🟡 end-to-end CLI test
-    - with Docker
+  - 🟡  end-to-end Docker test
+    - could cover more hevaior
   - 🟡 test quality
     - some refactors would be nice
-    - it might be good to not rely on external websites for unit testing, but not sure if it's worth it
+    - 🟠 it might be good to not rely on external websites for unit testing, but not sure if it's worth it
       - https://pkg.go.dev/testing#hdr-Main
       - or just setup/teardown where needed...
-  - 🟡 TODO: look into code coverage
-
-
+  - 🟡 look into code coverage - checked semi-manually (done)
 
 
 ## Run with Live Reload
