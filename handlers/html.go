@@ -4,8 +4,9 @@ import (
 	"embed"
 	"html/template"
 	"io"
-	"log"
 	"os"
+
+	"github.com/davidmasek/beacon/logging"
 )
 
 //go:embed report.template.html
@@ -27,7 +28,8 @@ func WriteReport(reports []ServiceReport, wr io.Writer) error {
 }
 
 func WriteReportToFile(reports []ServiceReport, filename string) error {
-	log.Printf("Writing report to %s", filename)
+	logger := logging.Get()
+	logger.Infow("Writing report to file", "path", filename)
 	// Create or truncate the output file
 	file, err := os.Create(filename)
 	if err != nil {

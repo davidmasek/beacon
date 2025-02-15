@@ -6,12 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/davidmasek/beacon/logging"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -368,6 +368,7 @@ func NewSQLStorage(path string) (*SQLStorage, error) {
 // If BEACON_DB is set that will be used.
 // Otherwise homedir/beacon.db is used.
 func InitDB(dbPath string) (Storage, error) {
+	logger := logging.Get()
 	// If not specified try loading from env variable.
 	// Always falling back to env var makes the path
 	// rewritable independent on how config is loaded.
@@ -389,7 +390,7 @@ func InitDB(dbPath string) (Storage, error) {
 		}
 		dbPath = filepath.Join(homedir, "beacon.db")
 	}
-	log.Println("DB path:", dbPath)
+	logger.Infow("Initializing DB", "path", dbPath)
 	db, err := NewSQLStorage(dbPath)
 	if err != nil {
 		return nil, err

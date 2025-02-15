@@ -2,12 +2,12 @@ package monitor
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 
+	"github.com/davidmasek/beacon/logging"
 	"github.com/davidmasek/beacon/storage"
 )
 
@@ -29,6 +29,7 @@ func RegisterHeartbeatHandlers(db storage.Storage, mux *http.ServeMux) {
 
 func handleBeat(db storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		logger := logging.Get()
 		serviceId := r.PathValue("service_id")
 		if serviceId == "" {
 			http.Error(w, "Missing service_id", http.StatusBadRequest)
@@ -38,7 +39,7 @@ func handleBeat(db storage.Storage) http.HandlerFunc {
 		// Log the heartbeat to the database
 		nowStr, err := db.RecordHeartbeat(serviceId, now)
 		if err != nil {
-			log.Println("[ERROR]", err)
+			logger.Error(err)
 			http.Error(w, "Failed to log heartbeat", http.StatusInternalServerError)
 			return
 		}
@@ -57,6 +58,7 @@ func handleBeat(db storage.Storage) http.HandlerFunc {
 
 func handleStatus(db storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		logger := logging.Get()
 		serviceId := r.PathValue("service_id")
 		if serviceId == "" {
 			http.Error(w, "Missing service_id", http.StatusBadRequest)
@@ -66,7 +68,7 @@ func handleStatus(db storage.Storage) http.HandlerFunc {
 		// Query the database for the latest heartbeat
 		timestamps, err := db.GetLatestHeartbeats(serviceId, 1)
 		if err != nil {
-			log.Println("[ERROR]", err)
+			logger.Error(err)
 			http.Error(w, "Failed to query database", http.StatusInternalServerError)
 			return
 		}

@@ -1,7 +1,6 @@
 package monitor
 
 import (
-	"log"
 	"time"
 
 	"io"
@@ -9,7 +8,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/davidmasek/beacon/logging"
 	"github.com/davidmasek/beacon/storage"
+	"go.uber.org/zap"
 )
 
 type WebConfig struct {
@@ -19,15 +20,15 @@ type WebConfig struct {
 }
 
 func CheckWebsites(db storage.Storage, websites map[string]WebConfig) error {
+	logger := logging.Get()
 	for service, config := range websites {
-		log.Println("Checking website", service)
-		log.Printf("Config: %+v\n", config)
+		logger.Debugw("Checking website", "service", service, "check_config", config)
 		timtestamp := time.Now()
 		serviceStatus, err := config.GetServiceStatus()
 		metadata := make(map[string]string)
 		metadata["status"] = string(serviceStatus)
 		if err != nil {
-			log.Println("[ERROR]", err)
+			logger.Error(err)
 			metadata["error"] = err.Error()
 		}
 		healthCheck := &storage.HealthCheckInput{
@@ -35,12 +36,12 @@ func CheckWebsites(db storage.Storage, websites map[string]WebConfig) error {
 			Timestamp: timtestamp,
 			Metadata:  metadata,
 		}
-		log.Printf("Saving %+v\n", healthCheck)
+		logger.Debugw("Saving", "healthCheck", healthCheck)
 		err = db.AddHealthCheck(
 			healthCheck,
 		)
 		if err != nil {
-			log.Println("[ERROR] Unable to save HealthCheck", err)
+			logger.Errorw("Unable to save HealthCheck", zap.Error(err), "healthCheck", healthCheck, "service", service)
 			return err
 		}
 	}
@@ -49,6 +50,7 @@ func CheckWebsites(db storage.Storage, websites map[string]WebConfig) error {
 }
 
 func (config *WebConfig) GetServiceStatus() (ServiceStatus, error) {
+	logger := logging.Get()
 	// TODO: we need to split this into two functions
 	// - "get status from website to DB"
 	// - "get ServiceStatus based on info from DB"
@@ -60,7 +62,7 @@ func (config *WebConfig) GetServiceStatus() (ServiceStatus, error) {
 	defer resp.Body.Close()
 	codeOk := slices.Contains(config.HttpStatus, resp.StatusCode)
 	if !codeOk {
-		log.Printf("Expected status code %v, got %v", config.HttpStatus, resp.StatusCode)
+		logger.Debugw("Web check - Unexpected status code", "expected", config.HttpStatus, "got", resp.StatusCode)
 		return STATUS_FAIL, err
 	}
 	body, err := io.ReadAll(resp.Body)
@@ -72,7 +74,7 @@ func (config *WebConfig) GetServiceStatus() (ServiceStatus, error) {
 		contained := strings.Contains(string(body), content)
 		if !contained {
 			fail = true
-			log.Printf("Expected body to contain %q, but it didn't", content)
+			logger.Debugw("Web check - Unexpected body", "expected", contained)
 			break
 		}
 	}

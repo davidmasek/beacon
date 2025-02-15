@@ -2,13 +2,14 @@ package scheduler
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/davidmasek/beacon/conf"
 	"github.com/davidmasek/beacon/handlers"
+	"github.com/davidmasek/beacon/logging"
 	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
+	"go.uber.org/zap"
 )
 
 func ShouldCheckWebServices(db storage.Storage, config *conf.Config, now time.Time) bool {
@@ -42,6 +43,7 @@ func CheckWebServices(db storage.Storage, services []conf.ServiceConfig) error {
 
 // Add placeholder (sentinel) "report" task to bootstrap calculation of next report time.
 func InitializeSentinel(db storage.Storage, now time.Time) error {
+	logger := logging.Get()
 	task, err := db.LatestTaskLog("report")
 	if err != nil {
 		return err
@@ -50,7 +52,7 @@ func InitializeSentinel(db storage.Storage, now time.Time) error {
 	if task != nil {
 		return nil
 	}
-	log.Printf("Creating sentinel report task with time %s\n", now)
+	logger.Infow("Creating sentinel report task", "time", now)
 	err = db.CreateTaskLog(storage.TaskInput{
 		TaskName: "report", Status: string(handlers.TASK_SENTINEL), Timestamp: now, Details: ""})
 	return err
@@ -80,11 +82,12 @@ func ShouldReport(db storage.Storage, config *conf.Config, query time.Time) (boo
 }
 
 func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
-	log.Println("Do scheduling work")
+	logger := logging.Get()
+	logger.Info("Do scheduling work")
 
 	var err error = nil
 	if ShouldCheckWebServices(db, config, now) {
-		log.Println("Checking web services...")
+		logger.Info("Checking web services...")
 		err = CheckWebServices(db, config.AllServices())
 		// TODO: might want to continue on error here
 		if err != nil {
@@ -96,7 +99,7 @@ func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 		return err
 	}
 	if doReport {
-		log.Println("Reporting...")
+		logger.Info("Reporting...")
 		err = handlers.DoReportTask(db, config, now)
 	}
 	return err
@@ -108,21 +111,23 @@ func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 // Will not call run next job again until previous one returns, even
 // if specified interval passes.
 func Start(ctx context.Context, db storage.Storage, config *conf.Config) {
+	logger := logging.Get()
 	checkInterval := config.SchedulerPeriod
 	InitializeSentinel(db, time.Now())
-	log.Printf("Starting scheduler: run each %s\n", checkInterval)
+	logger.Info("Starting scheduler: run each %s\n", checkInterval)
 	startFunction(ctx, checkInterval, func(now time.Time) error {
 		return RunSingle(db, config, now)
 	})
 }
 
 func startFunction(ctx context.Context, interval time.Duration, job func(time.Time) error) {
+	logger := logging.Get()
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("Scheduler stopped.")
+			logger.Info("Scheduler stopped.")
 			return
 		case t := <-ticker.C:
 			// If both ctx.Done() and ticker.C are ready
@@ -133,7 +138,7 @@ func startFunction(ctx context.Context, interval time.Duration, job func(time.Ti
 			}
 			err := job(t)
 			if err != nil {
-				log.Println("[scheduler:error]", err)
+				logger.Errorw("scheduled job failed", zap.Error(err))
 			}
 		}
 	}
