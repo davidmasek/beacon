@@ -4,18 +4,19 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/davidmasek/beacon/conf"
+	"github.com/davidmasek/beacon/logging"
 	"github.com/davidmasek/beacon/monitor"
 	"github.com/wneessen/go-mail"
+	"go.uber.org/zap"
 )
 
 func SendReport(reports []ServiceReport, emailConfig *conf.EmailConfig) error {
 	var buffer bytes.Buffer
-
-	log.Printf("[SMTPMailer] Generating report")
+	logger := logging.Get()
+	logger.Info("Generating report")
 	err := WriteReport(reports, &buffer)
 	if err != nil {
 		return err
@@ -52,7 +53,8 @@ func SendReport(reports []ServiceReport, emailConfig *conf.EmailConfig) error {
 }
 
 func SendMail(emailConfig *conf.EmailConfig, subject string, body string) error {
-	log.Printf("Sending email with subject %q to %q", subject, emailConfig.SendTo)
+	logger := logging.Get()
+	logger.Infow("Sending email", "subject", subject, "to", emailConfig.SendTo)
 
 	message := mail.NewMsg()
 	if err := message.From(emailConfig.Sender); err != nil {
@@ -87,7 +89,7 @@ func SendMail(emailConfig *conf.EmailConfig, subject string, body string) error 
 	err = client.DialAndSend(message)
 
 	if err != nil {
-		log.Printf("Failed to send email: %v", err)
+		logger.Errorw("Failed to send email", "subject", subject, "to", emailConfig.SendTo, zap.Error(err))
 	}
 	return err
 }

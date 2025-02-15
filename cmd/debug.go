@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/davidmasek/beacon/logging"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 var debugCmd = &cobra.Command{
@@ -14,7 +17,7 @@ var debugCmd = &cobra.Command{
 		logger.Debugw("Debug message", "foo", 42)
 		logger.Infow("Info message", "foo", 42)
 		logger.Warnw("Warn message", "foo", 42)
-		logger.Errorw("Error message", "foo", 42)
+		logger.Errorw("Error message", zap.Error(fmt.Errorf("big bad")))
 		cmd.Println("Done")
 		return nil
 	},

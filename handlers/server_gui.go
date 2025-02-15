@@ -4,15 +4,16 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"path/filepath"
 	"runtime/debug"
 	"time"
 
 	"github.com/davidmasek/beacon/conf"
+	"github.com/davidmasek/beacon/logging"
 	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
+	"go.uber.org/zap"
 )
 
 //go:embed templates/*
@@ -21,6 +22,7 @@ var TEMPLATES embed.FS
 // Show services status
 func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		logger := logging.Get()
 		// Prepare a map to hold services and their heartbeats
 		type ServiceStatus struct {
 			// Needed as HealthCheck can be nil
@@ -31,10 +33,10 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 		var services []ServiceStatus
 		serviceChecker := DefaultServiceChecker()
 		for _, serviceCfg := range config.AllServices() {
-			log.Println("Querying", serviceCfg.Id)
+			logger.Debugw("Querying", "service", serviceCfg.Id)
 			healthCheck, err := db.LatestHealthCheck(serviceCfg.Id)
 			if err != nil {
-				log.Printf("Failed to load health check: %s", err)
+				logger.Errorw("Failed to load health check", "service", serviceCfg.Id, zap.Error(err))
 				http.Error(w, "Failed to load health check", http.StatusInternalServerError)
 				return
 			}
@@ -73,7 +75,7 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 			filepath.Join("templates", "common.css"),
 		)
 		if err != nil {
-			log.Printf("Error parsing template: %v", err)
+			logger.Errorw("Error parsing template", zap.Error(err))
 			http.Error(w, "Failed to render page", http.StatusInternalServerError)
 			return
 		}
@@ -83,7 +85,7 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 			"CurrentPage": "home",
 		})
 		if err != nil {
-			log.Println("Failed to render", err)
+			logger.Errorw("Error rendering template", zap.Error(err))
 			http.Error(w, "Failed to render page", http.StatusInternalServerError)
 		}
 	}
@@ -92,6 +94,7 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 // Show services status
 func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		logger := logging.Get()
 		tmpl := template.New("about.html")
 		tmpl, err := tmpl.ParseFS(TEMPLATES,
 			filepath.Join("templates", "about.html"),
@@ -99,7 +102,7 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 			filepath.Join("templates", "common.css"),
 		)
 		if err != nil {
-			log.Printf("Error parsing template: %v", err)
+			logger.Errorw("Error parsing template", zap.Error(err))
 			http.Error(w, "Failed to render page", http.StatusInternalServerError)
 			return
 		}
@@ -107,7 +110,7 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 		timeFormat := "15:04 Monday 02 January"
 		lastReport, err := db.LatestTaskLog("report")
 		if err != nil {
-			log.Println("DB error", err)
+			logger.Errorw("DB error", zap.Error(err))
 			http.Error(w, "Server error, please try again later", http.StatusInternalServerError)
 			return
 		}
@@ -128,7 +131,7 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 		if lastReport == nil {
 			lastReportTime = "never"
 			nextReportAfter = "error"
-			log.Println("DB not properly initialized! No report task found")
+			logger.Error("DB not properly initialized! No report task found")
 		} else if lastReport.Status == string(TASK_SENTINEL) {
 			lastReportTime = "never"
 			nextReportAfter = NextReportTime(config, lastReport.Timestamp).
@@ -160,7 +163,7 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 			"BeaconVersion":         beaconVersion,
 		})
 		if err != nil {
-			log.Println("Failed to render", err)
+			logger.Errorw("Failed to render", zap.Error(err))
 			http.Error(w, "Failed to render page", http.StatusInternalServerError)
 		}
 	}

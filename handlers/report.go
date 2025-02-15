@@ -3,13 +3,14 @@ package handlers
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/davidmasek/beacon/conf"
+	"github.com/davidmasek/beacon/logging"
 	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
+	"go.uber.org/zap"
 )
 
 // Calculate when the next report should happen based on last report time.
@@ -43,6 +44,7 @@ func NextReportTime(config *conf.Config, lastReportTime time.Time) time.Time {
 }
 
 func GenerateReport(db storage.Storage, config *conf.Config) ([]ServiceReport, error) {
+	logger := logging.Get()
 	reports := make([]ServiceReport, 0)
 
 	services := config.AllServices()
@@ -52,16 +54,16 @@ func GenerateReport(db storage.Storage, config *conf.Config) ([]ServiceReport, e
 	}
 
 	for _, service := range services {
-		log.Println("Checking service", service)
+
 		healthCheck, err := db.LatestHealthCheck(service.Id)
 		var serviceStatus monitor.ServiceStatus
 		if err == nil {
 			serviceStatus = checkConfig.GetServiceStatus(healthCheck)
 		} else {
-			log.Println("[ERROR]", err)
+			logger.Errorw("error checking service status", "service", service, zap.Error(err))
 			serviceStatus = monitor.STATUS_OTHER
 		}
-		log.Println(" - Service status:", serviceStatus)
+		logger.Debug("Checked service", "service", service, "status", serviceStatus)
 
 		reports = append(reports, ServiceReport{
 			ServiceId: service.Id, ServiceStatus: serviceStatus, LatestHealthCheck: healthCheck,

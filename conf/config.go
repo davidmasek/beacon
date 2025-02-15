@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/caarlos0/env/v11"
+	"github.com/davidmasek/beacon/logging"
 	"gopkg.in/yaml.v3"
 )
 
@@ -220,6 +220,7 @@ func (tz *TzLocation) UnmarshalYAML(value *yaml.Node) error {
 
 // Parse config from YAML and override using ENV variables
 func ConfigFromBytes(data []byte) (*Config, error) {
+	logger := logging.Get()
 	config := NewConfig()
 	err := yaml.Unmarshal(data, config)
 	if err != nil {
@@ -231,12 +232,13 @@ func ConfigFromBytes(data []byte) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println(">>>>", config, "<<<<")
+	logger.Infow("loaded config", "config", config)
 	return config, err
 }
 
 func configFromFile(configFile string) (*Config, error) {
-	log.Printf("reading config from %q\n", configFile)
+	logger := logging.Get()
+	logger.Infow("reading config from file", "path", configFile)
 	data, err := os.ReadFile(configFile)
 	if err != nil {
 		return nil, err
