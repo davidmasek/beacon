@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import os
 import subprocess
 import time
 import requests
@@ -18,6 +18,8 @@ def run_compose_cmd(*args):
 # todo: refactor
 def main():
     try:
+        # print extra info about build
+        os.environ.setdefault("BUILDKIT_PROGRESS", "plain")
         print("Starting Beacon test.")
         print("---------------------")
         run_compose_cmd("down")
