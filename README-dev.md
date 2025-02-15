@@ -56,6 +56,7 @@ Beware that this file may be out of date.
   - 🟤 later: swagger API docs?
   - 🟢 docker + dockerhub
   - 🟢 version info available
+  - 🟤 todo: nginx integration example?
 - 🟢 notifications
   - 🟢 email reporting
   - 🟢 local HTML report
