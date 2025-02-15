@@ -12,9 +12,12 @@ RUN --mount=type=cache,target=/root/go/pkg/mod \
     go mod download && go mod verify
 
 COPY . .
+ARG GIT_REF
+ARG GIT_SHA
+RUN echo "Specified version ${GIT_REF} ${GIT_SHA}"
 RUN --mount=type=cache,target=/root/.cache/go-build \
     go build -o /app/beacon \
-    -ldflags="-X 'conf.GitRef=${GIT_REF}' -X 'conf.GitSha=${GIT_SHA}'"
+    -ldflags "-X 'github.com/davidmasek/beacon/conf.GitRef=${GIT_REF}' -X 'github.com/davidmasek/beacon/conf.GitSha=${GIT_SHA}'"
 
 # Stage 2: Main
 # -----------------------------------
