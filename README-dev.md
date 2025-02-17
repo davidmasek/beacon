@@ -6,6 +6,15 @@ You should start with the main [README](README.md).
 
 Beware that this file may be out of date.
 
+## Dev utilities
+
+```sh
+# non-structured logs
+export BEACON_LOGS="dev"
+# hot-reload server
+air start
+```
+
 ## 🚧 Feature list:
 - 🟢 heartbeat listener
   - 🟢 HTTP server
