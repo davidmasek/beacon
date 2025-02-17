@@ -114,7 +114,7 @@ func Start(ctx context.Context, db storage.Storage, config *conf.Config) {
 	logger := logging.Get()
 	checkInterval := config.SchedulerPeriod
 	InitializeSentinel(db, time.Now())
-	logger.Info("Starting scheduler: run each %s\n", checkInterval)
+	logger.Infow("Starting scheduler", "checkInterval", checkInterval)
 	startFunction(ctx, checkInterval, func(now time.Time) error {
 		return RunSingle(db, config, now)
 	})
