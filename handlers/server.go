@@ -26,7 +26,7 @@ func StartServer(db storage.Storage, config *conf.Config) (*http.Server, error) 
 	}
 
 	go func() {
-		fmt.Printf("Starting UI server on http://localhost:%d\n", port)
+		logger.Infow("Starting server", "host", fmt.Sprint("http://localhost:", port))
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
 			logger.Panic(err)
 		}
