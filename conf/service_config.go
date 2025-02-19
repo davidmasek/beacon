@@ -2,6 +2,8 @@ package conf
 
 import (
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -15,6 +17,7 @@ type ServiceConfig struct {
 	Id      string
 	Timeout time.Duration
 	Enabled bool
+	Token   Secret
 	// web only below
 	Url         string
 	HttpStatus  []int
@@ -26,6 +29,7 @@ func defaultServiceConfig(id string) *ServiceConfig {
 		Id:          id,
 		Timeout:     24 * time.Hour,
 		Enabled:     true,
+		Token:       Secret{},
 		Url:         "",
 		HttpStatus:  []int{200},
 		BodyContent: nil,
@@ -107,6 +111,31 @@ func NewServiceConfig(id string, input map[string]any) (*ServiceConfig, error) {
 		}
 	}
 
+	service.Token = Secret{}
+	inputTokenFile := input["token_file"]
+	if inputTokenFile != nil {
+		if tokenFileStr, ok := inputTokenFile.(string); ok {
+			if tokenFileStr != "" {
+				data, err := os.ReadFile(tokenFileStr)
+				if err != nil {
+					return nil, fmt.Errorf("[%s] cannot read token file: %w", id, err)
+				}
+				token := strings.TrimSpace(string(data))
+				service.Token.FromFile = token
+			}
+		} else {
+			return nil, fmt.Errorf("[%s] invalid type for timeout, expected string, got %q", id, inputTimeout)
+		}
+	}
+	inputToken := input["token"]
+	if inputToken != nil {
+		if tokenStr, ok := inputToken.(string); ok {
+			service.Token.Value = tokenStr
+		} else {
+			return nil, fmt.Errorf("[%s] invalid type for timeout, expected string, got %q", id, inputTimeout)
+		}
+	}
+
 	return service, nil
 }
 
@@ -137,5 +166,14 @@ func (servicesList *ServicesList) UnmarshalYAML(node *yaml.Node) error {
 		services = append(services, *serviceConfig)
 	}
 	servicesList.Services = services
+	return nil
+}
+
+func (servicesList *ServicesList) Get(id string) *ServiceConfig {
+	for _, cfg := range servicesList.Services {
+		if cfg.Id == id {
+			return &cfg
+		}
+	}
 	return nil
 }
