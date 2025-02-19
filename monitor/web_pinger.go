@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"context"
 	"time"
 
 	"io"
@@ -19,12 +20,17 @@ type WebConfig struct {
 	BodyContent []string `mapstructure:"content"`
 }
 
+const DEFAULT_TIMEOUT = 5
+
+// Check websites and save the resulting HealthChecks to storage
 func CheckWebsites(db storage.Storage, websites map[string]WebConfig) error {
 	logger := logging.Get()
+	ctx, cancel := context.WithTimeout(context.Background(), DEFAULT_TIMEOUT*time.Second)
+	defer cancel()
 	for service, config := range websites {
 		logger.Debugw("Checking website", "service", service, "check_config", config)
-		timtestamp := time.Now()
-		serviceStatus, err := config.GetServiceStatus()
+		timestamp := time.Now()
+		serviceStatus, err := config.CheckWebsite(ctx)
 		metadata := make(map[string]string)
 		metadata["status"] = string(serviceStatus)
 		if err != nil {
@@ -33,7 +39,7 @@ func CheckWebsites(db storage.Storage, websites map[string]WebConfig) error {
 		}
 		healthCheck := &storage.HealthCheckInput{
 			ServiceId: service,
-			Timestamp: timtestamp,
+			Timestamp: timestamp,
 			Metadata:  metadata,
 		}
 		logger.Debugw("Saving", "healthCheck", healthCheck)
@@ -49,24 +55,31 @@ func CheckWebsites(db storage.Storage, websites map[string]WebConfig) error {
 
 }
 
-func (config *WebConfig) GetServiceStatus() (ServiceStatus, error) {
+// Check website and return status
+func (config *WebConfig) CheckWebsite(ctx context.Context) (ServiceStatus, error) {
 	logger := logging.Get()
-	// TODO: we need to split this into two functions
-	// - "get status from website to DB"
-	// - "get ServiceStatus based on info from DB"
-	resp, err := http.Get(config.Url)
+	req, err := http.NewRequestWithContext(ctx, "GET", config.Url, nil)
 	if err != nil {
+		// Error on side of Beacon, not the web server -> Error level logging
+		logger.Errorw("Failed to create request", zap.Error(err))
+		return STATUS_FAIL, err
+	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		logger.Debugw("Web check failed", zap.Error(err))
 		return STATUS_FAIL, err
 	}
 	// When err is nil, resp always contains a non-nil resp.Body
 	defer resp.Body.Close()
 	codeOk := slices.Contains(config.HttpStatus, resp.StatusCode)
 	if !codeOk {
-		logger.Debugw("Web check - Unexpected status code", "expected", config.HttpStatus, "got", resp.StatusCode)
+		logger.Debugw("Web check failed", "cause", "Unexpected status code", "expected", config.HttpStatus, "got", resp.StatusCode)
 		return STATUS_FAIL, err
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		logger.Debugw("Web check failed", "cause", "Cannot read response", zap.Error(err))
 		return STATUS_FAIL, err
 	}
 	fail := false
@@ -74,7 +87,7 @@ func (config *WebConfig) GetServiceStatus() (ServiceStatus, error) {
 		contained := strings.Contains(string(body), content)
 		if !contained {
 			fail = true
-			logger.Debugw("Web check - Unexpected body", "expected", contained)
+			logger.Debugw("Web check failed", "cause", "missing content", "expected", content, "got", string(body))
 			break
 		}
 	}
