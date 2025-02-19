@@ -22,54 +22,42 @@ air start
   - 🟢 stable API
     - 🟢 needs finalization on "heartbeat"-only endpoints
     - 🟢 stabilize response - use JSON
-    - 🟤 later: needs endpoints for HealthCheck
+    - 🟤 (low) endpoints for HealthCheck
     - 🟢 go with `/services/<id>/action` structure
+  - 🔴 TODO auth
 - 🟢 web GUI
   - 🟢 display the main information
   - ~~should also support management~~
-    - management will currently be supported only by config files
+    - management supported by config files
   - 🟡 support auth
   - 🟢 unify ports - run on same port as HB listener
-- 🟡 website monitor
-  - yellow to keep an eye on testing/hardening
+- 🟢 website monitor (periodic website checking)
+  - 🟢 basic version done
+  - 🟢 should decouple "web scraping" and reporting
+- 🟢 notifications
+  - 🟢 email reporting
+  - 🟢 local HTML report
+  - 🟢 periodical monitoring
 - 🟡 reports
   - yellow to keep eye on UX
   - 🟢 basic flow
   - 🟢 should take config file into account (currently only looks at DB)
 - 🟡 heartbeat/website management
-  - yellow - works, but need to decide if we want more features
+  - yellow - works, but needs some final touches
   - 🟢 specified in config
   - 🟡 some support for "manual" services without config - for heartbeats only
     - up to debate if these should be kept
   - 🟤 delete old/unused service
-- 🟡 periodic website checking
-  -  yellow to keep an eye on testing/hardening
-  - 🟢 basic version done
-  - 🟢 should decouple "web scraping" and reporting
-- 🟡 user management
-  - 🟢 DB prepared
-  - would enable multi-user server
-  - would enable public server
-  - 🟡 auth
-  - 🟤 actual usage of users
-  - 🟤 registration / login
 - 🟡 friendly app configuration / documentation
   - 🟡 DB needs some documentation
   - 🟢 relative file paths handled
-  - 🟡 some "test my config file" functionality would be nice
   - 🟢 config file refactor
     - 🟢 config file should be required, but provided by default (inside homedir?)
   - 🟢 config format done
   - 🟢 main documentation done
-  - 🟡 needs some user-testing to make sure it makes sense
-  - 🟤 later: swagger API docs?
   - 🟢 docker + dockerhub
   - 🟢 version info available
   - 🟤 todo: nginx integration example?
-- 🟢 notifications
-  - 🟢 email reporting
-  - 🟢 local HTML report
-  - 🟢 periodical monitoring
 - 🟡 dev workflow
   - 🟢 basic github setup
   - 🟢 CI for building/testing 
@@ -78,18 +66,22 @@ air start
 - 🟡 testing
   - 🟢 unit tests for storage
   - 🟢 unit tests for CLI
+  - 🟢 do not rely on external websites for unit testing
+  - 🟢 code coverage 
+    - manual checks, sufficient for now
   - 🟡 end-to-end "Go" test
     - done for heartbeat
     - want for web
     - maybe for reports in the future
-  - 🟡  end-to-end Docker test
-    - could cover more hevaior
-  - 🟡 test quality
-    - some refactors would be nice
-    - 🟠 it might be good to not rely on external websites for unit testing, but not sure if it's worth it
-      - https://pkg.go.dev/testing#hdr-Main
-      - or just setup/teardown where needed...
-  - 🟡 look into code coverage - checked semi-manually (done)
+  - 🟡 end-to-end Docker test
+    - should cover also report content
+- 🟤 user management
+  - 🟢 DB prepared
+  - would enable multi-user server
+  - would enable public server
+  - 🟤 auth
+  - 🟤 actual usage of users
+  - 🟤 registration / login
 
 
 ## Run with Live Reload
