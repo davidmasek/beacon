@@ -1,6 +1,8 @@
 package conf
 
 import (
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -22,6 +24,9 @@ services:
   example-temp-disable:
     url: "will-not-be-used-because-disabled"
     enabled: false
+  strawberry:
+    url: "local.berry"
+    token: "Dmh9Yr5rycRPHxb7nCDa"
 `)
 
 func TestExampleConfigServices(t *testing.T) {
@@ -46,5 +51,36 @@ func TestExampleConfigServices(t *testing.T) {
 
 	// Service without config should still be included.
 	require.Contains(t, services, "beacon-periodic-checker")
-	assert.Equal(t, services["beacon-periodic-checker"].Enabled, true)
+	assert.Equal(t, true, services["beacon-periodic-checker"].Enabled)
+
+	require.Contains(t, services, "strawberry")
+	assert.Equal(t, true, services["strawberry"].Enabled)
+	assert.Equal(t, "local.berry", services["strawberry"].Url)
+	token := services["strawberry"].Token
+	assert.Equal(t, "Dmh9Yr5rycRPHxb7nCDa", token.Get())
+}
+
+func TestReadTokenFromFile(t *testing.T) {
+	configTemplate := `
+services:
+  strawberry:
+    url: "local.berry"
+    token: "Dmh9Yr5rycRPHxb7nCDa"
+    token_file: %s
+`
+	file, err := os.CreateTemp("", "test_token")
+	require.NoError(t, err)
+	os.WriteFile(file.Name(), []byte("AaaDmh9Yr5rycRPHxb7nCDa\n"), 0644)
+
+	configStr := fmt.Sprintf(configTemplate, file.Name())
+
+	config, err := ConfigFromBytes([]byte(configStr))
+	require.NoError(t, err)
+
+	service := config.Services.Get("strawberry")
+	require.NotNil(t, service)
+
+	assert.Equal(t, "AaaDmh9Yr5rycRPHxb7nCDa", service.Token.Get())
+	assert.Equal(t, "AaaDmh9Yr5rycRPHxb7nCDa", service.Token.FromFile)
+	assert.Equal(t, "Dmh9Yr5rycRPHxb7nCDa", service.Token.Value)
 }
