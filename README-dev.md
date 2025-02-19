@@ -25,6 +25,7 @@ air start
     - 🟤 (low) endpoints for HealthCheck
     - 🟢 go with `/services/<id>/action` structure
   - 🔴 TODO auth
+  - 🔴 ignore unknown / require auth if enabled
 - 🟢 web GUI
   - 🟢 display the main information
   - ~~should also support management~~
