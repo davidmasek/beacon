@@ -2,21 +2,58 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/davidmasek/beacon/conf"
 	"github.com/davidmasek/beacon/handlers"
+	"github.com/davidmasek/beacon/logging"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRunSingle(t *testing.T) {
+	logger := logging.InitTest(t)
+
 	db := storage.NewTestDb(t)
 	defer db.Close()
-	config, err := conf.ExampleConfig()
+
+	beaconGithub := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Beacon Github Page"))
+	}))
+	defer beaconGithub.Close()
+	tsFail := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer tsFail.Close()
+	tsDisabled := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger.Error("Disabled server called - should not be called")
+		t.Fail()
+	}))
+	defer tsDisabled.Close()
+	configTemplate := `
+services:
+  beacon-github:
+    url: "%s"
+    status:
+      - 200
+    content:
+      - Beacon
+  beacon-periodic-checker:
+  example-basic-web:
+    url: "%s"
+  example-temp-disable:
+    url: "%s"
+    enabled: false`
+	configStr := fmt.Sprintf(configTemplate, beaconGithub.URL, tsFail.URL, tsDisabled.URL)
+
+	config, err := conf.ConfigFromBytes([]byte(configStr))
 	require.NoError(t, err)
 	// disable emails for the test
 	config.EmailConf.Enabled = "false"
@@ -38,10 +75,14 @@ func TestRunSingle(t *testing.T) {
 	t.Log(string(dat))
 	content := string(dat)
 	require.Contains(t, content, "<html")
+	require.Contains(t, content, "beacon-github")
 	require.Contains(t, content, "beacon-periodic-checker")
+	require.Contains(t, content, "example-basic-web")
+	require.Contains(t, content, "example-temp-disable")
 }
 
 func TestSentinelCreatedOnlyOnce(t *testing.T) {
+	logging.InitTest(t)
 	db := storage.NewTestDb(t)
 	defer db.Close()
 
@@ -65,6 +106,7 @@ func TestSentinelCreatedOnlyOnce(t *testing.T) {
 }
 
 func TestSentinelCreatedOnlyIfNeeded(t *testing.T) {
+	logging.InitTest(t)
 	db := storage.NewTestDb(t)
 	defer db.Close()
 
@@ -86,6 +128,7 @@ func TestSentinelCreatedOnlyIfNeeded(t *testing.T) {
 }
 
 func TestShouldReport(t *testing.T) {
+	logging.InitTest(t)
 	db := storage.NewTestDb(t)
 	defer db.Close()
 	config, err := conf.ExampleConfig()
@@ -149,6 +192,7 @@ func TestShouldReport(t *testing.T) {
 }
 
 func TestStart(t *testing.T) {
+	logging.InitTest(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	calledCounter := 0
 	t.Log("Starting...")
@@ -166,6 +210,7 @@ func TestStart(t *testing.T) {
 }
 
 func TestStartCancel(t *testing.T) {
+	logging.InitTest(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	calledCounter := 0
