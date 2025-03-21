@@ -11,6 +11,7 @@ Beware that this file may be out of date.
 ```sh
 # non-structured logs
 export BEACON_LOGS="dev"
+export LOG_LEVEL="debug"
 # hot-reload server
 air start
 ```

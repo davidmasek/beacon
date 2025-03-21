@@ -11,6 +11,8 @@ services:
   example-temp-disable:
     url: "will-not-be-used-because-disabled"
     enabled: false
+  heartbeat-with-auth:
+    token_file: /etc/hb_token.txt
 
 
 email:

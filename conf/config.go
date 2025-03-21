@@ -101,6 +101,9 @@ type Config struct {
 
 	Services ServicesList
 
+	AllowUnknownHeartbeats bool
+	RequireHeartbeatAuth   bool
+
 	envPrefix string
 }
 
@@ -173,10 +176,12 @@ func NewConfig() *Config {
 	config := &Config{
 		Timezone: TzLocation{time.Local},
 		// todo[defaults]: better defaults approach
-		ReportAfter:     17,
-		Port:            8088,
-		SchedulerPeriod: 15 * time.Minute,
-		envPrefix:       ENV_VAR_PREFIX,
+		ReportAfter:            17,
+		Port:                   8088,
+		SchedulerPeriod:        15 * time.Minute,
+		AllowUnknownHeartbeats: true,
+		RequireHeartbeatAuth:   false,
+		envPrefix:              ENV_VAR_PREFIX,
 	}
 	config.Services.Services = []ServiceConfig{}
 	return config

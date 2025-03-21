@@ -17,7 +17,7 @@ func StartServer(db storage.Storage, config *conf.Config) (*http.Server, error) 
 	mux.HandleFunc("/{$}", handleIndex(db, config))
 	mux.HandleFunc("/about", handleAbout(db, config))
 
-	monitor.RegisterHeartbeatHandlers(db, mux)
+	monitor.RegisterHeartbeatHandlers(db, mux, config)
 	port := config.Port
 
 	server := &http.Server{
