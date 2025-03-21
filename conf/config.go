@@ -156,29 +156,6 @@ func DefaultConfig() (*Config, error) {
 	return DefaultConfigFrom(configFile)
 }
 
-// Load config file from `config.sample.yaml`. Useful for testing.
-//
-// Fail if example config file not found.
-// Setup config to use env variables.
-func ExampleConfig() (*Config, error) {
-	// test can be run with different working dir
-	locations := []string{
-		filepath.Join("config.sample.yaml"),
-		filepath.Join("..", "config.sample.yaml"),
-	}
-	for _, loc := range locations {
-		_, err := os.Stat(loc)
-		if errors.Is(err, fs.ErrNotExist) {
-			continue
-		}
-		if err != nil {
-			return nil, err
-		}
-		return DefaultConfigFrom(loc)
-	}
-	return nil, fmt.Errorf("config.sample.yaml file not found")
-}
-
 // Load config file from the specified path.
 //
 // Create config file if not found.
