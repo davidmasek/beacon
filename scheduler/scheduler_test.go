@@ -131,13 +131,16 @@ func TestShouldReport(t *testing.T) {
 	logging.InitTest(t)
 	db := storage.NewTestDb(t)
 	defer db.Close()
-	config, err := conf.ExampleConfig()
+	config, err := conf.ConfigFromBytes([]byte(`
+timezone: "Europe/Prague"
+report_time: 10
+`))
 	require.NoError(t, err)
 
-	config.ReportAfter = 10
+	require.Equal(t, 10, config.ReportAfter)
 	timezone, err := time.LoadLocation("Europe/Prague")
 	require.NoError(t, err)
-	config.Timezone = conf.TzLocation{Location: timezone}
+	require.Equal(t, timezone, config.Timezone.Location)
 
 	now := time.Date(2020, 5, 19, 17, 30, 0, 0, timezone)
 	tSameDayLater := time.Date(2020, 5, 19, 17, 30, 0, 0, timezone)

@@ -11,10 +11,23 @@ import (
 	"github.com/davidmasek/beacon/storage"
 )
 
+var TEST_CFG = []byte(`
+services:
+  beacon-github:
+    url: "https://github.com/davidmasek/beacon"
+    status:
+      - 200
+    content:
+      - Beacon
+  beacon-periodic-checker:
+
+timezone: "Europe/Prague"
+`)
+
 func TestHandleIndex(t *testing.T) {
 	db := storage.NewTestDb(t)
 	defer db.Close()
-	config, err := conf.ExampleConfig()
+	config, err := conf.ConfigFromBytes(TEST_CFG)
 	require.NoError(t, err)
 
 	// Construct the handler
@@ -43,7 +56,7 @@ func TestHandleAbout(t *testing.T) {
 	// Create a mock database
 	db := storage.NewTestDb(t)
 	defer db.Close()
-	config, err := conf.ExampleConfig()
+	config, err := conf.ConfigFromBytes(TEST_CFG)
 	require.NoError(t, err)
 
 	// Construct the handler
