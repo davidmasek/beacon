@@ -206,6 +206,22 @@ Response:
 }
 ```
 
+### Authentication, Authorization
+
+You can specify auth token for a service directly or in a file:
+```yaml
+my-long-running-job:
+  token: fj43u4Nobody3ExpEcts21n
+other-job:
+  token_file: /etc/other_job.txt
+```
+
+Include the token in the "Authorization" HTTP header with the "Bearer " prefix:
+```sh
+curl -H 'Authorization: Bearer fj43u4Nobody3ExpEcts21n' -X POST http://localhost:8088/services/my-service-name/beat
+curl -H 'Authorization: Bearer fj43u4Nobody3ExpEcts21n' -X GET  http://localhost:8088/services/my-service-name/status
+```
+
 
 ## Checking service status
 

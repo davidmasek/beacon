@@ -10,6 +10,7 @@ services:
     volumes:
       # Make sure the file exist, otherwise docker will mount the path as directory
       - ./config.sample.yaml:/app/beacon.yaml # config file
+      - ./tests/dummy_token.txt:/etc/hb_token.txt # example dummy token
       # Uncomment the following line to persist DB
       # - ./beacon-db/:/app/db/
     environment:

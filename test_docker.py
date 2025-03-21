@@ -15,6 +15,17 @@ def run_compose_cmd(*args):
     print(f"> Running: {' '.join(cmd)}")
     subprocess.check_call(cmd)
 
+
+def _post(url, headers=None):
+    print(f"POST {url}")
+    return requests.post(url, headers=headers)
+
+
+def _get(url, headers=None):
+    print(f"GET {url}")
+    return requests.get(url, headers=headers)
+
+
 # todo: refactor
 def main():
     try:
@@ -41,17 +52,44 @@ def main():
             print("Beacon did not become ready in time.")
             sys.exit(1)
 
-        # POST request
-        print("Sending POST to /services/sly-fox/beat")
+        # Basic flow
         post_url = f"http://localhost:{BEACON_PORT}/services/sly-fox/beat"
-        resp = requests.post(post_url)
+        resp = _post(post_url)
         resp.raise_for_status()
         print("POST succeeded!")
 
-        # GET request
-        print("Sending GET to /services/sly-fox/status")
         get_url = f"http://localhost:{BEACON_PORT}/services/sly-fox/status"
-        resp = requests.get(get_url)
+        resp = _get(get_url)
+        resp.raise_for_status()
+        print("GET succeeded! Response:")
+        print(resp.text)
+
+        # Missing auth
+        service_id = "heartbeat-with-auth"
+        post_url = f"http://localhost:{BEACON_PORT}/services/{service_id}/beat"
+        resp = _post(post_url)
+        if resp.status_code != 401:
+            raise ValueError(f"Expected request to fail, {post_url=}, {resp=}")
+        print("POST failed as expected!")
+
+        get_url = f"http://localhost:{BEACON_PORT}/services/{service_id}/status"
+        resp = _get(get_url)
+        if resp.status_code != 401:
+            raise ValueError(f"Expected request to fail, {get_url=}, {resp=}")
+        print("GET failed as expected! Response:")
+        print(resp.text)
+
+        # With auth
+        headers = {
+            "Authorization": "Bearer xasx@xJIXSA29jdfdnfNnuf$lLp"
+        }
+        post_url = f"http://localhost:{BEACON_PORT}/services/{service_id}/beat"
+        resp = _post(post_url, headers=headers)
+        resp.raise_for_status()
+        print("POST succeeded!")
+
+        get_url = f"http://localhost:{BEACON_PORT}/services/{service_id}/status"
+        resp = _get(get_url, headers=headers)
         resp.raise_for_status()
         print("GET succeeded! Response:")
         print(resp.text)
