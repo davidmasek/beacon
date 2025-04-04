@@ -367,3 +367,11 @@ func TestUserFlow(t *testing.T) {
 	err = db.CreateUser("don.john.von.lon@google.com", "")
 	require.Error(t, err)
 }
+
+func TestDbSchemaIncluded(t *testing.T) {
+	db := NewTestDb(t)
+	defer db.Close()
+	schemas, err := db.ListSchemaVersions()
+	require.NoError(t, err)
+	require.NotEmpty(t, schemas)
+}

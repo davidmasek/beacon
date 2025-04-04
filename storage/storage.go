@@ -13,6 +13,7 @@ import (
 
 	"github.com/davidmasek/beacon/logging"
 	_ "github.com/mattn/go-sqlite3"
+	"go.uber.org/zap"
 )
 
 //go:embed create.sql
@@ -53,6 +54,12 @@ type Task struct {
 	Details   string
 }
 
+// DB Versions
+type SchemaVersion struct {
+	Version   int
+	AppliedAt time.Time
+}
+
 type Storage interface {
 	Close() error
 	// List all distinct services
@@ -77,6 +84,8 @@ type Storage interface {
 	LatestTaskLog(taskName string) (*Task, error)
 	// Get latest task log with given status.
 	LatestTaskLogWithStatus(taskName string, status string) (*Task, error)
+	// List all schema versions present
+	ListSchemaVersions() ([]SchemaVersion, error)
 }
 
 // https://www.sqlite.org/lang_select.html#limitoffset
@@ -396,4 +405,30 @@ func InitDB(dbPath string) (Storage, error) {
 		return nil, err
 	}
 	return db, nil
+}
+
+func (s *SQLStorage) ListSchemaVersions() ([]SchemaVersion, error) {
+	logger := logging.Get()
+	rows, err := s.db.Query(`SELECT version, applied_at FROM schema_version ORDER BY version DESC`)
+	if err != nil {
+		logger.Errorw("Failed query", zap.Error(err))
+		return nil, err
+	}
+	defer rows.Close()
+	versions := make([]SchemaVersion, 0)
+	for rows.Next() {
+		var timestampStr string
+		var version int
+		if err := rows.Scan(&version, &timestampStr); err != nil {
+			logger.Errorw("Failed scan", zap.Error(err))
+			return nil, err
+		}
+		timestamp, err := time.Parse(TIME_FORMAT, timestampStr)
+		if err != nil {
+			logger.Errorw("Failed parsing time", "timestampStr", timestampStr, zap.Error(err))
+			return nil, err
+		}
+		versions = append(versions, SchemaVersion{version, timestamp})
+	}
+	return versions, nil
 }
