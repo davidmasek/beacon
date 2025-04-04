@@ -264,11 +264,13 @@ If using Docker, mount the database file to persist data between container resta
 
 ## 🌟  Beacon status
 
-Beacon is now stable. I use it for my personal projects. I will avoid breaking changes if possible, but backwards compatibility is not guaranteed till we reach version 1.0. 
+Beacon is now stable. I use it for my personal projects.
 
 Beacon is easily deployable as Docker container or installed as Go application.
 
-Development notes and more detailed status is available in [README-dev](README-dev.md).
+Beacon reached v1 🎉 . You should be able to upgrade from any v1.X version to any higher v1.X version.
+
+Feel free to submit bugs or feature requests as Issues on GitHub.
 
 ## ⚙️ Build
 
