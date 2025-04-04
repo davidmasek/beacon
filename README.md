@@ -45,6 +45,17 @@ Beacon is also available as a Docker container. [`compose.yaml`](./compose.yaml)
 docker compose up
 ```
 
+### NGINX
+
+See [`compose.yaml`](./compose.yaml) and [`examples/nginx`] for basic NGINX configuration.
+
+
+```sh
+docker compose up
+curl -k -X POST http://localhost:8088/services/my-service-name/beat
+curl -k -X GET http://localhost:8088/services/my-service-name/status
+```
+
 ## 🔧 Configuration
 
 Beacon uses a configuration file to define monitored services and email settings for notifications. The default location is `~/beacon.yaml`, but you can specify a custom location using the `--config` CLI flag. If no configuration file is found, Beacon will create a default one.

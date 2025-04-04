@@ -38,3 +38,21 @@ services:
       - ServerOptions__TlsMode=StartTls
       - RelayOptions__Login="beacon"
       - RelayOptions__Password="beacon"
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_reverse_proxy
+    depends_on:
+      - beacon
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./examples/nginx/conf.d:/etc/nginx/conf.d
+      - ./examples/nginx/ssl:/etc/nginx/ssl
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"

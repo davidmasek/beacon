@@ -59,7 +59,7 @@ air start
   - 🟢 main documentation done
   - 🟢 docker + dockerhub
   - 🟢 version info available
-  - 🟤 todo: nginx integration example?
+  - 🟢 nginx integration example
 - 🟡 dev workflow
   - 🟢 basic github setup
   - 🟢 CI for building/testing 
