@@ -37,7 +37,5 @@ COPY --from=builder /app/beacon /app/beacon
 
 WORKDIR /app
 
-ENV BEACON_DB=/app/db/beacon.db
-
 ENTRYPOINT ["/app/beacon"]
 CMD ["start", "--config", "/app/beacon.yaml"]

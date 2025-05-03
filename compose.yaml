@@ -16,6 +16,8 @@ services:
     environment:
       # Allow insecure TLS if username is "beacon". Remove this in production.
       - BEACON_EMAIL_TLS_INSECURE=beacon
+      # specify db path for easier docker-compose setup
+      - BEACON_DB=/app/db/beacon.db
     logging:
       driver: "json-file"
       options:
