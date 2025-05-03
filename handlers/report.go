@@ -36,7 +36,11 @@ import (
 // - keep scheduler with reduced functionality ?
 func NextReportTime(config *conf.Config, lastReportTime time.Time) time.Time {
 	lastReportTime = lastReportTime.In(config.Timezone.Location)
-	nextReportDay := lastReportTime.Add(24 * time.Hour)
+	nextReportDay := lastReportTime.AddDate(0, 0, 1)
+	// if ReportOnDays is set, then keep adding days until we get one that is allowed
+	for !config.ReportOnDays.IsEmpty() && !config.ReportOnDays.Contains(nextReportDay) {
+		nextReportDay = nextReportDay.AddDate(0, 0, 1)
+	}
 	nextReportTime := time.Date(
 		nextReportDay.Year(), nextReportDay.Month(), nextReportDay.Day(),
 		config.ReportAfter, 0, 0, 0, nextReportDay.Location())

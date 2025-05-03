@@ -107,3 +107,32 @@ func TestNextReportTime(t *testing.T) {
 	assert.Equal(t, 10, next.Hour(), next.In(time.UTC))
 	assert.Equal(t, now.In(timezone).Day()+1, next.Day(), fmt.Sprintf("now: %s, next: %s\n", now, next))
 }
+
+func TestNextReportTimeWeekends(t *testing.T) {
+	config := conf.NewConfig()
+	config.ReportAfter = 10
+	config.Timezone = conf.TzLocation{Location: time.UTC}
+	monday := time.Date(2025, 4, 28, 12, 0, 0, 0, time.UTC)
+
+	next := NextReportTime(config, monday)
+	require.Equal(t, "Tuesday", next.Weekday().String())
+
+	weekdays := conf.WeekdaysSet{}
+	err := weekdays.ParseString("Wed")
+	require.NoError(t, err)
+	config.ReportOnDays = weekdays
+	next = NextReportTime(config, monday)
+	require.Equal(t, "Wednesday", next.Weekday().String())
+
+	err = weekdays.ParseString("Sun Mon")
+	require.NoError(t, err)
+	config.ReportOnDays = weekdays
+	next = NextReportTime(config, monday)
+	require.Equal(t, "Sunday", next.Weekday().String())
+
+	err = weekdays.ParseString("Mon")
+	require.NoError(t, err)
+	config.ReportOnDays = weekdays
+	next = NextReportTime(config, monday)
+	require.Equal(t, "Monday", next.Weekday().String())
+}

@@ -92,6 +92,7 @@ type Config struct {
 	// report after n-th hour in the day
 	// e.g. 17 -> report after 5pm
 	ReportAfter     int           `yaml:"report_time" env:"REPORT_TIME"`
+	ReportOnDays    WeekdaysSet   `yaml:"report_on_days" env:"REPORT_ON_DAYS"`
 	DbPath          string        `yaml:"db_path" env:"DB"`
 	ReportName      string        `yaml:"report_name" env:"REPORT_NAME"`
 	Port            int           `yaml:"port" env:"PORT"`
