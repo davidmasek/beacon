@@ -163,7 +163,8 @@ export BEACON_EMAIL_SMTP_PASSWORD_FILE="/path/to/password-file"
 | Field          | Description                                          | Example                         |
 |----------------|--------------------------------------------------|---------------------------------|
 | `timezone`  | Timezone to use. Uses IANA Time Zone database, see https://pkg.go.dev/time#LoadLocation for details.                           | `Australia/Sydney`               |
-| `report_time`    | Hour of the day after which to send reports. For example, `17` will be understood as 5pm, and reports will be send after 5pm as determined by `timezone`.                                             | `17`                          |
+| `report_time`    | Hour of the day after which to send periodic reports. For example, `17` will be understood as 5pm, and reports will be send after 5pm as determined by `timezone`.                                             | `17`                          |
+| `report_on_days`    | Days on which to send periodic reports. | `Mon Tue Wed Thu Fri`, `Sat Sun`                          |
 
 
 ### Configuration sources
