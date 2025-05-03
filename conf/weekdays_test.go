@@ -50,3 +50,17 @@ Wednesday Thursday Saturday
 	require.True(t, weekdays.Contains(saturday))
 	require.False(t, weekdays.Contains(sunday))
 }
+
+func TestWeekdaysMarshall(t *testing.T) {
+	src := `
+Mon Tue Sun
+`
+	weekdays := WeekdaysSet{}
+	err := yaml.Unmarshal([]byte(src), &weekdays)
+	require.NoError(t, err)
+	t.Logf("%#v\n", weekdays)
+
+	out, err := weekdays.MarshalYAML()
+	require.NoError(t, err)
+	require.Equal(t, "Sunday Monday Tuesday", out)
+}
