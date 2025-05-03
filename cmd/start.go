@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/davidmasek/beacon/handlers"
+	"github.com/davidmasek/beacon/logging"
 	"github.com/davidmasek/beacon/scheduler"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/spf13/cobra"
@@ -24,6 +25,10 @@ var startCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
+		logger := logging.Get()
+		logger.Info(">>> Beacon startup <<<")
+		logger.Info("^^^^^^^^^^^^^^^^^^^^^^")
 
 		config, err := loadConfig(cmd)
 		if err != nil {

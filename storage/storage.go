@@ -389,11 +389,13 @@ func InitDB(dbPath string) (Storage, error) {
 	// the somewhat non-systematic behavior of directly accessing
 	// env here instead of using Viper.
 	if dbPath == "" {
+		logger.Info("Trying to load DB path from ENV BEACON_DB")
 		dbPath = os.Getenv("BEACON_DB")
 	}
 	// if still not specified use homedir/beacon.db
 	if dbPath == "" {
 		homedir, err := os.UserHomeDir()
+		logger.Infow("Using default DB path", "homedir", homedir)
 		if err != nil {
 			return nil, err
 		}
