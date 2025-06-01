@@ -121,6 +121,7 @@ smtp_server: mail.smtp2go.com
 smtp_port: 587
 smtp_username: beacon
 smtp_password: h4xor
+smtp_ssl: true
 send_to: you@example.fake
 sender: noreply@example.fake
 prefix: "[test]"
@@ -136,9 +137,40 @@ prefix: "[test]"
 		587,
 		"beacon",
 		Secret{"h4xor", ""},
+		true,
 		"you@example.fake",
 		"noreply@example.fake",
 		"[test]",
+		"",
+		"",
+	})
+	require.Equal(t, "h4xor", emailConfig.SmtpPassword.Get())
+}
+
+func TestParseEmailConfigOptionals(t *testing.T) {
+	src := `
+smtp_server: mail.smtp2go.com
+smtp_port: 587
+smtp_username: beacon
+smtp_password: h4xor
+send_to: you@example.fake
+sender: noreply@example.fake
+`
+	emailConfig := EmailConfig{}
+	err := yaml.Unmarshal([]byte(src), &emailConfig)
+	require.NoError(t, err)
+	t.Logf("%#v\n", emailConfig)
+	require.NotContains(t, fmt.Sprintf("%#v", emailConfig), "h4xor",
+		"Password (secret) value should not be logged")
+	require.Equal(t, emailConfig, EmailConfig{
+		"mail.smtp2go.com",
+		587,
+		"beacon",
+		Secret{"h4xor", ""},
+		false, // optional SSL
+		"you@example.fake",
+		"noreply@example.fake",
+		"", // optional prefix
 		"",
 		"",
 	})

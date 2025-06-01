@@ -86,6 +86,10 @@ func SendMail(emailConfig *conf.EmailConfig, subject string, body string) error 
 		})
 	}
 
+	if emailConfig.SmtpSSL {
+		client.SetSSL(true)
+	}
+
 	err = client.DialAndSend(message)
 
 	if err != nil {
