@@ -49,9 +49,12 @@ type EmailConfig struct {
 	SmtpPort     int    `yaml:"smtp_port" env:"SMTP_PORT"`
 	SmtpUsername string `yaml:"smtp_username" env:"SMTP_USERNAME"`
 	SmtpPassword Secret `yaml:"smtp_password" envPrefix:"SMTP_PASSWORD"`
-	SendTo       string `yaml:"send_to" env:"SEND_TO"`
-	Sender       string `yaml:"sender" env:"SENDER"`
-	Prefix       string `yaml:"prefix" env:"PREFIX"`
+	// If true, then explicitly set the network
+	// SSL option for the SMTP client.
+	SmtpSSL bool   `yaml:"smtp_ssl" env:"smtp_SSL"`
+	SendTo  string `yaml:"send_to" env:"SEND_TO"`
+	Sender  string `yaml:"sender" env:"SENDER"`
+	Prefix  string `yaml:"prefix" env:"PREFIX"`
 	// not bool to allow more flexible usage
 	Enabled string `yaml:"enabled" env:"ENABLED"`
 	// "never", "beacon", "allow"

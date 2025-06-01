@@ -126,15 +126,16 @@ The option `timeout` determines how long to consider a service healthy after a s
 Email notifications are optional but recommended for receiving health reports. Configure the email section in the config file with your SMTP server details. You can find many SMTP providers online, both paid and free.
 
 
-| Field          | Description                                         | Required | Example                         |
-|----------------|-----------------------------------------------------|----------|---------------------------------|
-| `smtp_server`  | Address of the SMTP server                          | Yes      | `smtp.gmail.com`               |
-| `smtp_port`    | SMTP port                                           | Yes      | `587`                          |
-| `smtp_username`| SMTP server username                                | Yes      | `your-email@gmail.com`         |
-| `smtp_password`| SMTP server password                                | Yes      | `your-password`                |
-| `send_to`      | Recipient email address                             | Yes      | `your-email@gmail.com`         |
-| `sender`       | Email address used as the sender                   | Yes      | `beacon@example.com`           |
-| `prefix`       | String prepended to email subject for easy filtering | No       | `[Production]`                 |
+| Field          | Description                                          | Required | Example                         |
+|----------------|------------------------------------------------------|----------|---------------------------------|
+| `smtp_server`  | Address of the SMTP server                           | Yes      | `smtp.gmail.com`                |
+| `smtp_port`    | SMTP port                                            | Yes      | `587`                           |
+| `smtp_username`| SMTP server username                                 | Yes      | `your-email@gmail.com`          |
+| `smtp_password`| SMTP server password                                 | Yes      | `your-password`                 |
+| `smtp_ssl`     | Explicitly set network SSL for the `go-mail` client  | No       | `true`                          |
+| `send_to`      | Recipient email address                              | Yes      | `your-email@gmail.com`          |
+| `sender`       | Email address used as the sender                     | Yes      | `beacon@example.com`            |
+| `prefix`       | String prepended to email subject for easy filtering | No       | `[Production]`                  |
 
 Example:
 ```yaml
