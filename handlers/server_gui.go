@@ -19,6 +19,11 @@ import (
 //go:embed templates/*
 var TEMPLATES embed.FS
 
+const (
+	SUMMARY_STATS_LOOKBACK = -30 * 24 * time.Hour
+	SUMMARY_STATS_INTERVAL = 30 * time.Minute
+)
+
 // Show services status
 func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +40,7 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 		serviceChecker := DefaultServiceChecker()
 
 		now := time.Now().UTC()
-		from := now.Add(-30 * 24 * time.Hour)
+		from := now.Add(SUMMARY_STATS_LOOKBACK)
 
 		for _, serviceCfg := range config.AllServices() {
 			logger.Debugw("Querying", "service", serviceCfg.Id)
@@ -53,7 +58,7 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 
 			serviceStatus := serviceChecker.GetServiceStatus(latestCheck)
 
-			intervals := monitor.BuildStatusIntervals(checks, from, now, 30*time.Minute)
+			intervals := monitor.BuildStatusIntervals(checks, from, now, SUMMARY_STATS_INTERVAL)
 			up, down := monitor.SummarizeIntervals(intervals)
 			uptimeSummary := fmt.Sprintf("%.2f%% up, %.2f%% down", up, down)
 
