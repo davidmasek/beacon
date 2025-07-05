@@ -66,8 +66,10 @@ type Storage interface {
 	ListServices() ([]string, error)
 	// Main entrypoint for adding data
 	AddHealthCheck(healthCheckInput *HealthCheckInput) error
-	// List existing healthchecks
+	// List existing health checks
 	LatestHealthChecks(serviceID string, limit int) ([]*HealthCheck, error)
+	// List health checks after given time
+	HealthChecksSince(serviceID string, since time.Time) ([]*HealthCheck, error)
 	// Convenience method to get return healthcheck (possibly nil)
 	LatestHealthCheck(serviceID string) (*HealthCheck, error)
 	// Store heartbeat and return the stored value or error
@@ -267,6 +269,38 @@ func (s *SQLStorage) GetLatestHeartbeats(serviceId string, limit int) ([]time.Ti
 		timestamps = append(timestamps, timestamp)
 	}
 	return timestamps, nil
+}
+
+func (s *SQLStorage) HealthChecksSince(serviceId string, since time.Time) ([]*HealthCheck, error) {
+	sinceStr := since.UTC().Format(time.RFC3339)
+	rows, err := s.db.Query(`
+	SELECT
+		id,
+		service_id,
+		timestamp,
+		metadata
+	FROM
+		health_checks
+	WHERE
+		service_id = ?
+		AND timestamp >= ?
+	ORDER BY
+		timestamp ASC
+	`, serviceId, sinceStr)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	healthChecks := make([]*HealthCheck, 0)
+	for rows.Next() {
+		healthCheck, err := rowToHealthCheck(rows)
+		if err != nil {
+			return nil, err
+		}
+		healthChecks = append(healthChecks, healthCheck)
+	}
+	return healthChecks, nil
 }
 
 func (s *SQLStorage) LatestHealthChecks(serviceId string, limit int) ([]*HealthCheck, error) {

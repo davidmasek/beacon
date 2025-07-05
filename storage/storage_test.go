@@ -375,3 +375,34 @@ func TestDbSchemaIncluded(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, schemas)
 }
+
+func TestHealthChecksSince(t *testing.T) {
+	db := NewTestDb(t)
+	defer db.Close()
+
+	serviceID := "test-service"
+	base := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	events := []HealthCheckInput{
+		{ServiceId: serviceID, Timestamp: base.Add(-2 * time.Hour), Metadata: map[string]string{"status": "OK"}},
+		{ServiceId: serviceID, Timestamp: base.Add(-1 * time.Hour), Metadata: map[string]string{"status": "FAIL"}},
+		// cutoff here
+		{ServiceId: serviceID, Timestamp: base, Metadata: map[string]string{"status": "OK"}},
+		{ServiceId: serviceID, Timestamp: base.Add(1 * time.Hour), Metadata: map[string]string{"status": "FAIL"}},
+	}
+
+	for _, event := range events {
+		err := db.AddHealthCheck(&event)
+		require.NoError(t, err)
+	}
+
+	cutoff := base.Add(-5 * time.Minute)
+
+	hc, err := db.HealthChecksSince(serviceID, cutoff)
+	require.NoError(t, err)
+
+	require.Equal(t, 2, len(hc), "expected 2 results after cutoff")
+
+	last := hc[len(hc)-1]
+	require.Equal(t, "FAIL", last.Metadata["status"])
+}

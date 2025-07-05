@@ -39,7 +39,7 @@
             background-color: #f8d7da;
             color: #721c24;
         }
-        .last-checked {
+        .service-small {
             font-size: 14px;
             color: #666;
         }
@@ -70,7 +70,8 @@
             <div class="panel-summary" onclick="togglePanel(this)">
                 <div>
                     <span class="service-name">{{ .ServiceId }} </span><br>
-                    <span class="last-checked">Last checked: {{ TimeAgo .LatestHealthCheck }}</span>
+                    <span class="service-small">Uptime (30 days): {{ .UptimeSummary }}</span><br>
+                    <span class="service-small">Last checked: {{ TimeAgo .LatestHealthCheck }}</span>
                 </div>
                 <span class="status status-{{ .CurrentStatus }}">{{ .CurrentStatus }}</span>
             </div>
