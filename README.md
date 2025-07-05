@@ -13,7 +13,7 @@ You can use Beacon to:
 
 There are two main ways to use Beacon:
 - Beacon checks your website or server for expected response = "web service".
-- You sends health information (heartbeats) to Beacon = "heartbeat service". 
+- You send health information (heartbeats) to Beacon = "heartbeat service". 
 
 Beacon aims to be flexible and lets you choose how to use it.
 
