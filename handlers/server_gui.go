@@ -29,24 +29,39 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 			ServiceId         string
 			LatestHealthCheck *storage.HealthCheck
 			CurrentStatus     monitor.ServiceStatus
+			UptimeSummary     string
 		}
 		var services []ServiceStatus
 		serviceChecker := DefaultServiceChecker()
+
+		now := time.Now().UTC()
+		from := now.Add(-30 * 24 * time.Hour)
+
 		for _, serviceCfg := range config.AllServices() {
 			logger.Debugw("Querying", "service", serviceCfg.Id)
-			healthCheck, err := db.LatestHealthCheck(serviceCfg.Id)
+			checks, err := db.HealthChecksSince(serviceCfg.Id, from)
 			if err != nil {
-				logger.Errorw("Failed to load health check", "service", serviceCfg.Id, zap.Error(err))
-				http.Error(w, "Failed to load health check", http.StatusInternalServerError)
+				logger.Errorw("Failed to load health checks", "service", serviceCfg.Id, zap.Error(err))
+				http.Error(w, "Failed to load health checks", http.StatusInternalServerError)
 				return
 			}
 
-			serviceStatus := serviceChecker.GetServiceStatus(healthCheck)
+			var latestCheck *storage.HealthCheck
+			if len(checks) > 0 {
+				latestCheck = checks[len(checks)-1]
+			}
+
+			serviceStatus := serviceChecker.GetServiceStatus(latestCheck)
+
+			intervals := monitor.BuildStatusIntervals(checks, from, now, 30*time.Minute)
+			up, down := monitor.SummarizeIntervals(intervals)
+			uptimeSummary := fmt.Sprintf("%.2f%% up, %.2f%% down", up, down)
 
 			// Add service and its heartbeats to the list
 			services = append(services, ServiceStatus{
 				ServiceId:         serviceCfg.Id,
-				LatestHealthCheck: healthCheck,
+				LatestHealthCheck: latestCheck,
+				UptimeSummary:     uptimeSummary,
 				CurrentStatus:     serviceStatus,
 			})
 		}

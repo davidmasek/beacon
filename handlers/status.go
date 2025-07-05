@@ -32,18 +32,5 @@ func (config *ServiceChecker) GetServiceStatus(latestHealthCheck *storage.Health
 	if timeAgo > config.Timeout {
 		return monitor.STATUS_FAIL
 	}
-
-	if errorMeta, exists := latestHealthCheck.Metadata["error"]; exists {
-		if errorMeta != "" {
-			logger.Debug("[GetServiceStatus] error found: %q", errorMeta)
-			return monitor.STATUS_FAIL
-		}
-	}
-	if statusMeta, exists := latestHealthCheck.Metadata["status"]; exists {
-		if statusMeta != string(monitor.STATUS_OK) {
-			logger.Debug("[GetServiceStatus] status not OK: %q != %q", statusMeta, string(monitor.STATUS_OK))
-			return monitor.STATUS_FAIL
-		}
-	}
-	return monitor.STATUS_OK
+	return monitor.HealthCheckStatus(latestHealthCheck)
 }
