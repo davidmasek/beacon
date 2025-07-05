@@ -252,13 +252,12 @@ curl http://localhost:8088/services/my-service-name/status
 # generate report for all your services
 beacon report
 # generate report and send it via email
-# (see below for email configuration)
 beacon report --send-mail
 ```
 
 ## Database
 
-Beacon uses `beacon.db` file inside your home directory to store it's data. 
+Beacon uses a `beacon.db` file inside your home directory to store it's data. 
 
 You can specify different path using the `BEACON_DB` env variable.
 
@@ -297,7 +296,7 @@ go test ./... -coverprofile cover.out
 ```
 
 Additionally there is a script for integration testing using Docker. This script has two goals. First, it tests
-that the Docker image can be build and starts correctly, ensuring people can use Beacon via Docker.
+that the Docker image can be built and starts correctly, ensuring people can use Beacon via Docker.
 Second, it runs Beacon in a clean environment, which helps catch problems that might be hidden
 during local development.
 
