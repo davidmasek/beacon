@@ -17,6 +17,8 @@ There are two main ways to use Beacon:
 
 Beacon aims to be flexible and lets you choose how to use it.
 
+<img src="imgs/beacon_gui_example.png" alt="web GUI example" width="500px">
+
 ## 🚀 Quickstart
 
 Beacon can be easily installed anywhere [Go](https://go.dev/) is available.
