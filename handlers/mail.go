@@ -55,6 +55,10 @@ func SendReport(reports []ServiceReport, emailConfig *conf.EmailConfig) error {
 func SendMail(emailConfig *conf.EmailConfig, subject string, body string) error {
 	logger := logging.Get()
 	logger.Infow("Sending email", "subject", subject, "to", emailConfig.SendTo)
+	if emailConfig.SendTo == "DEBUG" {
+		logger.Warn("Not sending email because send_to is set to DEBUG")
+		return nil
+	}
 
 	message := mail.NewMsg()
 	if err := message.From(emailConfig.Sender); err != nil {

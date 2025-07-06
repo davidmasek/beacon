@@ -90,6 +90,8 @@ type Storage interface {
 	LatestTaskLogWithStatus(taskName string, status string, detailsQuery string) (*Task, error)
 	// List all schema versions present
 	ListSchemaVersions() ([]SchemaVersion, error)
+
+	DropTasks() error
 }
 
 // https://www.sqlite.org/lang_select.html#limitoffset
@@ -468,4 +470,10 @@ func (s *SQLStorage) ListSchemaVersions() ([]SchemaVersion, error) {
 		versions = append(versions, SchemaVersion{version, timestamp})
 	}
 	return versions, nil
+}
+
+func (s *SQLStorage) DropTasks() error {
+	const sentinel = "SENTINEL"
+	_, err := s.db.Exec("DELETE FROM task_logs WHERE status != ?", sentinel)
+	return err
 }
