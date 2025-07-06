@@ -121,6 +121,9 @@ func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 	if doReport {
 		logger.Info("Reporting...")
 		err = handlers.DoReportTask(db, config, now)
+		if err != nil {
+			return err
+		}
 	}
 	for _, cfg := range config.AllServices() {
 		doReport, err = ShouldReportFailedService(db, &cfg, now)
@@ -128,7 +131,11 @@ func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 			return err
 		}
 		if doReport {
-			handlers.ReportFailedService(db, config, &cfg, now)
+			logger.Infow("Reporting failed service", "service", cfg.Id)
+			err = handlers.ReportFailedService(db, config, &cfg, now)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return err
@@ -137,12 +144,22 @@ func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 // Run periodic jobs.
 // Config: SCHEDULER_PERIOD (duration)
 //
+// Run first pass immediately.
+//
 // Will not call run next job again until previous one returns, even
 // if specified interval passes.
 func Start(ctx context.Context, db storage.Storage, config *conf.Config) {
 	logger := logging.Get()
 	checkInterval := config.SchedulerPeriod
-	InitializeSentinel(db, time.Now())
+	err := InitializeSentinel(db, time.Now())
+	if err != nil {
+		logger.Errorw("Failed to initialize job sentinel", zap.Error(err))
+	}
+
+	if err = RunSingle(db, config, time.Now()); err != nil {
+		logger.Errorw("Scheduling work failed", zap.Error(err))
+	}
+
 	logger.Infow("Starting scheduler", "checkInterval", checkInterval)
 	startFunction(ctx, checkInterval, func(now time.Time) error {
 		return RunSingle(db, config, now)
