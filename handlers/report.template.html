@@ -40,7 +40,7 @@
         <tbody>
             {{range .}}
             <tr>
-                <td>{{.ServiceCfg.ServiceId}}</td>
+                <td>{{.ServiceCfg.Id}}</td>
                 <td class="status-{{.ServiceStatus}}">{{.ServiceStatus}}</td>
                 <td>
                     {{ if .LatestHealthCheck }}
