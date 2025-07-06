@@ -7,3 +7,4 @@ watch_dir = "."
 exclude_dir = ["db", "vendor", "templates"]
 delve = false
 log = "air_errors.log"
+exclude_file = ["report.html"]
