@@ -12,6 +12,9 @@ import (
 	"go.uber.org/zap"
 )
 
+// report daily (might be made configurable later)
+const FailedServiceReportInterval = 24 * time.Hour
+
 func ShouldCheckWebServices(db storage.Storage, config *conf.Config, now time.Time) bool {
 	// TODO - should follow some config or smth
 	return true
@@ -81,6 +84,23 @@ func ShouldReport(db storage.Storage, config *conf.Config, query time.Time) (boo
 	return isAfter, nil
 }
 
+// Decide if extra report should be generated for a failed service
+func ShouldReportFailedService(db storage.Storage, cfg *conf.ServiceConfig, query time.Time) (bool, error) {
+	task, err := db.LatestServiceFailedLog(cfg.Id)
+	if err != nil {
+		return false, err
+	}
+	if task == nil {
+		return true, nil
+	}
+	if task.Status == string(handlers.TASK_ERROR) {
+		return true, nil
+	}
+	nextReportTime := task.Timestamp.Add(FailedServiceReportInterval)
+	isAfter := query.After(nextReportTime)
+	return isAfter, nil
+}
+
 func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 	logger := logging.Get()
 	logger.Info("Do scheduling work")
@@ -101,6 +121,15 @@ func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 	if doReport {
 		logger.Info("Reporting...")
 		err = handlers.DoReportTask(db, config, now)
+	}
+	for _, cfg := range config.AllServices() {
+		doReport, err = ShouldReportFailedService(db, &cfg, now)
+		if err != nil {
+			return err
+		}
+		if doReport {
+			handlers.ReportFailedService(db, config, &cfg, now)
+		}
 	}
 	return err
 }

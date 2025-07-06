@@ -329,7 +329,7 @@ func TestEmptyDb(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, task)
 
-	task, err = db.LatestTaskLogWithStatus("task", "status")
+	task, err = db.LatestTaskLogWithStatus("task", "status", "")
 	require.NoError(t, err)
 	require.Nil(t, task)
 

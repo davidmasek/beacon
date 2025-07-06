@@ -84,8 +84,10 @@ type Storage interface {
 	CreateTaskLog(taskInput TaskInput) error
 	// Get latest task log.
 	LatestTaskLog(taskName string) (*Task, error)
-	// Get latest task log with given status.
-	LatestTaskLogWithStatus(taskName string, status string) (*Task, error)
+	// Latest report of a failed service
+	LatestServiceFailedLog(serviceName string) (*Task, error)
+	// Get latest task log with given status and/or details.
+	LatestTaskLogWithStatus(taskName string, status string, detailsQuery string) (*Task, error)
 	// List all schema versions present
 	ListSchemaVersions() ([]SchemaVersion, error)
 }
@@ -120,33 +122,28 @@ func (s *SQLStorage) CreateTaskLog(taskInput TaskInput) error {
 	return err
 }
 
-func (s *SQLStorage) LatestTaskLogWithStatus(taskName string, status string) (*Task, error) {
+func (s *SQLStorage) LatestTaskLogWithStatus(taskName string, status string, detailsQuery string) (*Task, error) {
 	var timestampStr string
 	var details string
 	var taskNameDb string
 	var statusDb string
+	var args = []interface{}{taskName}
 
-	var err error
-	// status should never be "" so use empty string to mean any status
-	if status == "" {
-		err = s.db.QueryRow(
-			`SELECT timestamp, status, details, task_name
+	query := `SELECT timestamp, status, details, task_name
 		 FROM task_logs
-		 WHERE task_name = ?
-		 ORDER BY timestamp DESC
-		 LIMIT 1`,
-			taskName,
-		).Scan(&timestampStr, &statusDb, &details, &taskNameDb)
-	} else {
-		err = s.db.QueryRow(
-			`SELECT timestamp, status, details, task_name
-		 FROM task_logs
-		 WHERE task_name = ? AND status = ?
-		 ORDER BY timestamp DESC
-		 LIMIT 1`,
-			taskName, status,
-		).Scan(&timestampStr, &statusDb, &details, &taskNameDb)
+		 WHERE task_name = ?`
+	if status != "" {
+		query += ` AND status = ?`
+		args = append(args, status)
 	}
+	if detailsQuery != "" {
+		query += ` AND details = ?`
+		args = append(args, detailsQuery)
+	}
+	query += ` ORDER BY timestamp DESC
+		 LIMIT 1`
+
+	err := s.db.QueryRow(query, args...).Scan(&timestampStr, &statusDb, &details, &taskNameDb)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -166,7 +163,11 @@ func (s *SQLStorage) LatestTaskLogWithStatus(taskName string, status string) (*T
 }
 
 func (s *SQLStorage) LatestTaskLog(taskName string) (*Task, error) {
-	return s.LatestTaskLogWithStatus(taskName, "")
+	return s.LatestTaskLogWithStatus(taskName, "", "")
+}
+
+func (s *SQLStorage) LatestServiceFailedLog(serviceName string) (*Task, error) {
+	return s.LatestTaskLogWithStatus("report_fail", "", serviceName)
 }
 
 func (s *SQLStorage) CreateUser(email string, password string) error {

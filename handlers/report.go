@@ -116,3 +116,28 @@ func DoReportTask(db storage.Storage, config *conf.Config, now time.Time) error 
 		TaskName: "report", Status: string(status), Timestamp: now, Details: details})
 	return errors.Join(err, dbErr)
 }
+
+func ReportFailedService(db storage.Storage, config *conf.Config, serviceCfg *conf.ServiceConfig, now time.Time) error {
+	var err error
+	shouldSendEmail := config.EmailConf.IsEnabled()
+	prefix := config.EmailConf.Prefix
+	// add whitespace after prefix if it exists and is not included already
+	if prefix != "" && !strings.HasSuffix(prefix, " ") {
+		prefix = prefix + " "
+	}
+
+	msg := fmt.Sprintf(`%sBeacon: Service "%s" failed!`, prefix, serviceCfg.Id)
+
+	if shouldSendEmail {
+		err = SendMail(&config.EmailConf, msg, msg)
+	}
+
+	status := TASK_OK
+	if err != nil {
+		status = TASK_ERROR
+
+	}
+	dbErr := db.CreateTaskLog(storage.TaskInput{
+		TaskName: "report_fail", Status: string(status), Timestamp: now, Details: serviceCfg.Id})
+	return errors.Join(err, dbErr)
+}
