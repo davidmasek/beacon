@@ -53,16 +53,16 @@ func GenerateReport(db storage.Storage, config *conf.Config) ([]ServiceReport, e
 
 	services := config.AllServices()
 
-	checkConfig := ServiceChecker{
-		Timeout: 24 * time.Hour,
-	}
-
 	for _, service := range services {
 
 		healthCheck, err := db.LatestHealthCheck(service.Id)
+		checks := []*storage.HealthCheck{}
+		if healthCheck != nil {
+			checks = append(checks, healthCheck)
+		}
 		var serviceStatus monitor.ServiceStatus
 		if err == nil {
-			serviceStatus = checkConfig.GetServiceStatus(healthCheck)
+			serviceStatus = monitor.GetServiceStatus(service, checks)
 		} else {
 			logger.Errorw("error checking service status", "service", service, zap.Error(err))
 			serviceStatus = monitor.STATUS_OTHER

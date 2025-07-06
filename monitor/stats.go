@@ -3,30 +3,12 @@ package monitor
 import (
 	"time"
 
-	"github.com/davidmasek/beacon/logging"
 	"github.com/davidmasek/beacon/storage"
 )
 
 type IntervalStatus struct {
 	Interval Interval
 	Status   ServiceStatus
-}
-
-func HealthCheckStatus(hc *storage.HealthCheck) ServiceStatus {
-	logger := logging.Get()
-	if errorMeta, exists := hc.Metadata["error"]; exists {
-		if errorMeta != "" {
-			logger.Debug("[GetServiceStatus] error found: %q", errorMeta)
-			return STATUS_FAIL
-		}
-	}
-	if statusMeta, exists := hc.Metadata["status"]; exists {
-		if statusMeta != string(STATUS_OK) {
-			logger.Debug("[GetServiceStatus] status not OK: %q != %q", statusMeta, string(STATUS_OK))
-			return STATUS_FAIL
-		}
-	}
-	return STATUS_OK
 }
 
 func BuildStatusIntervals(checks []*storage.HealthCheck, from, to time.Time, interval time.Duration) []IntervalStatus {

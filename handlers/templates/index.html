@@ -71,21 +71,13 @@
                 <div>
                     <span class="service-name">{{ .ServiceId }} </span><br>
                     <span class="service-small">Uptime (30 days): {{ .UptimeSummary }}</span><br>
-                    <span class="service-small">Last checked: {{ TimeAgo .LatestHealthCheck }}</span>
+                    <span class="service-small">Last checked: {{ .LastChecked }}</span>
                 </div>
                 <span class="status status-{{ .CurrentStatus }}">{{ .CurrentStatus }}</span>
             </div>
             <div class="panel-details">
-                {{ if HasMetadata .LatestHealthCheck }}
-                    <strong>Metadata:</strong>
-                    <ul>
-                        {{ range $key, $value := .LatestHealthCheck.Metadata }}
-                            <li><strong>{{ $key }}</strong>: {{ $value }}</li>
-                        {{ end }}
-                    </ul>
-                {{ else }}
-                    <strong>No metadata present</strong>
-                {{ end }}
+                <!-- Currently unused -->
+                <div>No details available</div>
             </div>
         </div>
         {{ end }}

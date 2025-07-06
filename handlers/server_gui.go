@@ -31,13 +31,12 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 		// Prepare a map to hold services and their heartbeats
 		type ServiceStatus struct {
 			// Needed as HealthCheck can be nil
-			ServiceId         string
-			LatestHealthCheck *storage.HealthCheck
-			CurrentStatus     monitor.ServiceStatus
-			UptimeSummary     string
+			ServiceId     string
+			LastChecked   string
+			CurrentStatus monitor.ServiceStatus
+			UptimeSummary string
 		}
 		var services []ServiceStatus
-		serviceChecker := DefaultServiceChecker()
 
 		now := time.Now().UTC()
 		from := now.Add(SUMMARY_STATS_LOOKBACK)
@@ -50,24 +49,23 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 				http.Error(w, "Failed to load health checks", http.StatusInternalServerError)
 				return
 			}
-
-			var latestCheck *storage.HealthCheck
-			if len(checks) > 0 {
-				latestCheck = checks[len(checks)-1]
-			}
-
-			serviceStatus := serviceChecker.GetServiceStatus(latestCheck)
+			serviceStatus := monitor.GetServiceStatus(serviceCfg, checks)
 
 			intervals := monitor.BuildStatusIntervals(checks, from, now, SUMMARY_STATS_INTERVAL)
 			up, down := monitor.SummarizeIntervals(intervals)
 			uptimeSummary := fmt.Sprintf("%.2f%% up, %.2f%% down", up, down)
 
+			lastChecked := "never"
+			if len(checks) > 0 {
+				lastChecked = TimeAgo(checks[len(checks)-1].Timestamp)
+			}
+
 			// Add service and its heartbeats to the list
 			services = append(services, ServiceStatus{
-				ServiceId:         serviceCfg.Id,
-				LatestHealthCheck: latestCheck,
-				UptimeSummary:     uptimeSummary,
-				CurrentStatus:     serviceStatus,
+				ServiceId:     serviceCfg.Id,
+				LastChecked:   lastChecked,
+				UptimeSummary: uptimeSummary,
+				CurrentStatus: serviceStatus,
 			})
 		}
 
@@ -75,15 +73,7 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 			return hc != nil && len(hc.Metadata) > 0
 		}
 
-		timeAgoHealthCheck := func(hc *storage.HealthCheck) string {
-			if hc == nil {
-				return "never"
-			}
-			return TimeAgo(hc.Timestamp)
-		}
-
 		funcMap := template.FuncMap{
-			"TimeAgo":     timeAgoHealthCheck,
 			"HasMetadata": hasMetadata,
 		}
 
