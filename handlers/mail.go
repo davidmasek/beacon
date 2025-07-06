@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func SendReport(reports []ServiceReport, emailConfig *conf.EmailConfig) error {
+func sendReport(reports []ServiceReport, emailConfig *conf.EmailConfig) error {
 	var buffer bytes.Buffer
 	logger := logging.Get()
 	logger.Info("Generating report")

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/davidmasek/beacon/conf"
 	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
 )
@@ -18,9 +19,9 @@ const (
 )
 
 type ServiceReport struct {
-	ServiceId         string
 	ServiceStatus     monitor.ServiceStatus
 	LatestHealthCheck *storage.HealthCheck
+	ServiceCfg        conf.ServiceConfig
 }
 
 func prettyPrint(details map[string]string) string {

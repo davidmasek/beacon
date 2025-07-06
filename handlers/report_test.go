@@ -85,7 +85,7 @@ func TestWriteReport(t *testing.T) {
 	for _, input := range testServicesInput {
 		serviceId := input.ServiceId
 		idx := slices.IndexFunc(reports, func(report ServiceReport) bool {
-			return report.ServiceId == serviceId
+			return report.ServiceCfg.Id == serviceId
 		})
 		require.GreaterOrEqualf(t, idx, 0, "Service %s not found in reports", serviceId)
 

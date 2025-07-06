@@ -50,7 +50,11 @@ var reportCmd = &cobra.Command{
 			return err
 		}
 		defer db.Close()
-		return handlers.DoReportTask(db, config, time.Now())
+		reports, err := handlers.GenerateReport(db, config)
+		if err != nil {
+			return err
+		}
+		return handlers.SaveSendReport(reports, db, config, time.Now())
 	},
 }
 

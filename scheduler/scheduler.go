@@ -118,21 +118,29 @@ func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 	if err != nil {
 		return err
 	}
+	reports, err := handlers.GenerateReport(db, config)
+	if err != nil {
+		return err
+	}
 	if doReport {
 		logger.Info("Reporting...")
-		err = handlers.DoReportTask(db, config, now)
+		err = handlers.SaveSendReport(reports, db, config, now)
 		if err != nil {
 			return err
 		}
 	}
-	for _, cfg := range config.AllServices() {
-		doReport, err = ShouldReportFailedService(db, &cfg, now)
+	for _, report := range reports {
+		if report.ServiceStatus == monitor.STATUS_OK {
+			continue
+		}
+		logger.Debugw("Service not OK", "service", report.ServiceCfg.Id)
+		doReport, err = ShouldReportFailedService(db, &report.ServiceCfg, now)
 		if err != nil {
 			return err
 		}
 		if doReport {
-			logger.Infow("Reporting failed service", "service", cfg.Id)
-			err = handlers.ReportFailedService(db, config, &cfg, now)
+			logger.Infow("Reporting failed service", "service", report.ServiceCfg.Id)
+			err = handlers.ReportFailedService(db, config, &report.ServiceCfg, now)
 			if err != nil {
 				return err
 			}

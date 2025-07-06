@@ -70,22 +70,19 @@ func GenerateReport(db storage.Storage, config *conf.Config) ([]ServiceReport, e
 		logger.Debug("Checked service", "service", service, "status", serviceStatus)
 
 		reports = append(reports, ServiceReport{
-			ServiceId: service.Id, ServiceStatus: serviceStatus, LatestHealthCheck: healthCheck,
+			ServiceStatus:     serviceStatus,
+			LatestHealthCheck: healthCheck,
+			ServiceCfg:        service,
 		})
 	}
 
 	return reports, nil
 }
 
-// Generate, save and send report.
+// Save and send report.
 //
 // See ShouldReport to check if this task should be run.
-func DoReportTask(db storage.Storage, config *conf.Config, now time.Time) error {
-	reports, err := GenerateReport(db, config)
-	if err != nil {
-		return err
-	}
-
+func SaveSendReport(reports []ServiceReport, db storage.Storage, config *conf.Config, now time.Time) error {
 	filename := config.ReportName
 	if filename == "" {
 		filename = "report"
@@ -97,11 +94,11 @@ func DoReportTask(db storage.Storage, config *conf.Config, now time.Time) error 
 
 	// proceed to send email even if writing to file fails
 	// as it is better if at least one of the two succeeds
-	err = WriteReportToFile(reports, filename)
+	err := WriteReportToFile(reports, filename)
 
 	shouldSendEmail := config.EmailConf.IsEnabled()
 	if shouldSendEmail {
-		emailErr := SendReport(reports, &config.EmailConf)
+		emailErr := sendReport(reports, &config.EmailConf)
 		err = errors.Join(err, emailErr)
 	}
 
