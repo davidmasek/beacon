@@ -52,6 +52,11 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
+		if !config.EmailConf.IsConfigured() {
+			missingFields := config.EmailConf.MissingConfigurationFields()
+			logger.Warnw("Email not configured", "missing fields", missingFields)
+		}
+
 		ctx, cancelScheduler := context.WithCancel(context.Background())
 		go scheduler.Start(ctx, db, config)
 

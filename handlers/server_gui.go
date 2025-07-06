@@ -90,9 +90,12 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 			return
 		}
 
+		emailMissingConfig := config.EmailConf.MissingConfigurationFields()
+
 		err = tmpl.Execute(w, map[string]any{
-			"services":    services,
-			"CurrentPage": "home",
+			"services":           services,
+			"CurrentPage":        "home",
+			"EmailMissingConfig": emailMissingConfig,
 		})
 		if err != nil {
 			logger.Errorw("Error rendering template", zap.Error(err))

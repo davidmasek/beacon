@@ -14,6 +14,13 @@
             cursor: pointer;
             border-bottom: 1px solid #ddd;
         }
+        .panel-info {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+        }
         .panel-summary:hover {
             background: #f8f8f8;
         }
@@ -60,6 +67,10 @@
         .panel.active .panel-details {
             display: block;
         }
+        li {
+            list-style-type: circle;
+            margin-left: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -78,6 +89,32 @@
             <div class="panel-details">
                 <!-- Currently unused -->
                 <div>No details available</div>
+            </div>
+        </div>
+        {{ end }}
+        {{ if .EmailMissingConfig }}
+        <div class="panel active">
+            <div class="panel-info">
+                <div>
+                    <span class="service-name">Your email is not configured!</span><br>
+                </div>
+            </div>
+            <div class="panel-details">
+                <p>
+                    You won't be able to receive email notifications until you configure your email settings.
+                    See <a href="https://github.com/davidmasek/beacon">https://github.com/davidmasek/beacon</a> for details.
+                </p>
+                <div>
+                    <p><strong>Missing fields:</strong></p>
+                    <ul>
+                        {{ range $key, $value := .EmailMissingConfig }}
+                        <li>{{ $value }}</li>
+                        {{ end }}
+                    </ul>
+                </div>
+                <p>
+                    
+                </p>
             </div>
         </div>
         {{ end }}

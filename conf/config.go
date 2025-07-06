@@ -61,6 +61,36 @@ type EmailConfig struct {
 	TlsInsecure string `yaml:"tls_insecure" env:"TLS_INSECURE"`
 }
 
+// Check if all required fields are set
+func (emailConf *EmailConfig) IsConfigured() bool {
+	return len(emailConf.MissingConfigurationFields()) == 0
+}
+
+func (emailConf *EmailConfig) MissingConfigurationFields() []string {
+	missing := []string{}
+
+	if emailConf.SmtpServer == "" {
+		missing = append(missing, "smtp_server")
+	}
+	if emailConf.SmtpPort == 0 {
+		missing = append(missing, "smtp_port")
+	}
+	if emailConf.SmtpUsername == "" {
+		missing = append(missing, "smtp_username")
+	}
+	if !emailConf.SmtpPassword.IsSet() {
+		missing = append(missing, "smtp_password")
+	}
+	if emailConf.SendTo == "" {
+		missing = append(missing, "send_to")
+	}
+	if emailConf.Sender == "" {
+		missing = append(missing, "sender")
+	}
+
+	return missing
+}
+
 func (emailConf *EmailConfig) IsEnabled() bool {
 	// explicitly enabled
 	if emailConf.Enabled == "yes" || emailConf.Enabled == "true" {
@@ -70,7 +100,7 @@ func (emailConf *EmailConfig) IsEnabled() bool {
 	if emailConf.Enabled == "no" || emailConf.Enabled == "false" {
 		return false
 	}
-	return emailConf.SmtpPassword.IsSet()
+	return emailConf.IsConfigured()
 }
 
 func (s *Secret) UnmarshalYAML(node *yaml.Node) error {
