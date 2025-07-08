@@ -62,7 +62,14 @@
             list-style-type: none;
         }
         .panel-details ul li {
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+        .panel-details ul li:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
         }
         .panel.active .panel-details {
             display: block;
@@ -70,6 +77,11 @@
         li {
             list-style-type: circle;
             margin-left: 1rem;
+        }
+        .check-meta {
+            color: #555;
+            font-size: 0.8em;
+            display: block;
         }
     </style>
 </head>
@@ -87,8 +99,20 @@
                 <span class="status status-{{ .CurrentStatus }}">{{ .CurrentStatus }}</span>
             </div>
             <div class="panel-details">
-                <!-- Currently unused -->
-                <div>No details available</div>
+                <ul>
+                    {{ range .RecentChecks }}
+                    {{ $status := HealthCheckStatus . }}
+                    <li>
+                        <span title="{{ .Timestamp }}">{{ TimeAgo .Timestamp }}</span>:
+                        <strong class="status status-{{ $status }}">{{ $status }}</strong>
+                        {{ if .Metadata.error }}
+                            <span class="check-meta">Error: {{ .Metadata.error }}</span>
+                        {{ end }}
+                    </li>
+                    {{ else }}
+                    <li>No recent checks found.</li>
+                    {{ end }}
+                </ul>
             </div>
         </div>
         {{ end }}
