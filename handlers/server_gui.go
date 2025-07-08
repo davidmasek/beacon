@@ -28,15 +28,15 @@ const (
 func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger := logging.Get()
-		// Prepare a map to hold services and their heartbeats
-		type ServiceStatus struct {
-			// Needed as HealthCheck can be nil
+
+		type ServiceView struct {
 			ServiceId     string
 			LastChecked   string
 			CurrentStatus monitor.ServiceStatus
 			UptimeSummary string
+			RecentChecks  []*storage.HealthCheck
 		}
-		var services []ServiceStatus
+		var services []ServiceView
 
 		now := time.Now().UTC()
 		from := now.Add(SUMMARY_STATS_LOOKBACK)
@@ -51,6 +51,14 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 			}
 			serviceStatus := monitor.GetServiceStatus(serviceCfg, checks)
 
+			// Get the last checks for the details panel
+			recentChecks, err := db.LatestHealthChecks(serviceCfg.Id, 5)
+			if err != nil {
+				logger.Errorw("Failed to load recent health checks", "service", serviceCfg.Id, zap.Error(err))
+				http.Error(w, "Failed to load recent health checks", http.StatusInternalServerError)
+				return
+			}
+
 			intervals := monitor.BuildStatusIntervals(checks, from, now, SUMMARY_STATS_INTERVAL)
 			up, down := monitor.SummarizeIntervals(intervals)
 			uptimeSummary := fmt.Sprintf("%.2f%% up, %.2f%% down", up, down)
@@ -60,21 +68,18 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 				lastChecked = TimeAgo(checks[len(checks)-1].Timestamp)
 			}
 
-			// Add service and its heartbeats to the list
-			services = append(services, ServiceStatus{
+			services = append(services, ServiceView{
 				ServiceId:     serviceCfg.Id,
 				LastChecked:   lastChecked,
 				UptimeSummary: uptimeSummary,
 				CurrentStatus: serviceStatus,
+				RecentChecks:  recentChecks,
 			})
 		}
 
-		hasMetadata := func(hc *storage.HealthCheck) bool {
-			return hc != nil && len(hc.Metadata) > 0
-		}
-
 		funcMap := template.FuncMap{
-			"HasMetadata": hasMetadata,
+			"HealthCheckStatus": monitor.HealthCheckStatus,
+			"TimeAgo":           TimeAgo,
 		}
 
 		tmpl := template.New("index.html").Funcs(funcMap)
