@@ -284,7 +284,7 @@ Run testing script for Docker:
 # tested with Python 3.10, any recent Python should work
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements.dev.txt
+python -m pip install -r requirements-dev.txt
 # the script:
 # 1. stops currently running containers with `docker compose down`
 # 2. rebuilds the containers
