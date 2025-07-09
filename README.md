@@ -6,16 +6,11 @@
 
 Beacon tracks the health of your websites, servers, and applications, so you know that everything runs as it should.
 
-You can use Beacon to:
-- Automatically check website availability and content.
-- Receive notifications when services fail to send updates (heartbeats).
-- Get periodic health reports via email or web GUI.
+Beacon will automatically send you reports about your services. You can always check current status of your services on the web GUI.
 
 There are two main ways to use Beacon:
 - Beacon checks your website or server for expected response = "web service".
 - You send health information (heartbeats) to Beacon = "heartbeat service". 
-
-Beacon aims to be flexible and lets you choose how to use it.
 
 Web GUI example:
 
@@ -237,26 +232,6 @@ Include the token in the "Authorization" HTTP header with the "Bearer " prefix:
 ```sh
 curl -H 'Authorization: Bearer fj43u4Nobody3ExpEcts21n' -X POST http://localhost:8088/services/my-service-name/beat
 curl -H 'Authorization: Bearer fj43u4Nobody3ExpEcts21n' -X GET  http://localhost:8088/services/my-service-name/status
-```
-
-
-## Checking service status
-
-Beacon will automatically send you reports about your services. You can always check current status of your services on the web GUI, by default on [http://localhost:8088](http://localhost:8088).
-
-You can also check status of a specific service with the HTTP API or generate the full report via CLI. This enables you to build your own logic and reporting on top of Beacon as needed.
-
-```sh
-# view current status in your browser (default address)
-http://localhost:8088
-
-# use HTTP API (curl as an example, use anything you want)
-curl http://localhost:8088/services/my-service-name/status
-
-# generate report for all your services
-beacon report
-# generate report and send it via email
-beacon report --send-mail
 ```
 
 ## Database
