@@ -30,7 +30,7 @@ func RegisterHeartbeatHandlers(db storage.Storage, mux *http.ServeMux, config *c
 	mux.HandleFunc("/services/{service_id}/status", handleStatus(db, config))
 }
 
-// todo: Auth might be better handled by middleware function instead,
+// Auth might be better handled by middleware function instead,
 // which might also extract and validate the service (or another middleware could do that).
 // For now, going with this simple function that returns if processing should stop (auth failed or something else is wrong).
 func checkAuth(w http.ResponseWriter, r *http.Request, config *conf.Config, service *conf.ServiceConfig) (stop bool) {

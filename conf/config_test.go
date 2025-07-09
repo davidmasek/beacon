@@ -66,9 +66,6 @@ scheduler_period: 33m
 
 	expectedTimezone, err := time.LoadLocation("Europe/Prague")
 	require.NoError(t, err)
-	// todo[defaults]: would prefer not having constants here
-	// but need some testing for parsing the more complex types
-	// Should refactor this once we have better defaults
 	assert.Equal(t, expectedTimezone, config.Timezone.Location,
 		fmt.Sprintf("%s x %s", expectedTimezone.String(), config.Timezone.Location.String()))
 	assert.Equal(t, 17, config.ReportAfter)

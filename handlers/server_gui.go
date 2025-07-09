@@ -161,8 +161,11 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 				In(config.Timezone.Location).Format(timeFormat)
 		}
 		if !config.EmailConf.IsEnabled() {
-			// todo: more info would be nice (why disabled)
-			nextReportAfter = "disabled"
+			if config.EmailConf.IsConfigured() {
+				nextReportAfter = "disabled"
+			} else {
+				nextReportAfter = "disabled (emails not configured)"
+			}
 		}
 		serverTime := time.Now().In(config.Timezone.Location).Format(timeFormat)
 

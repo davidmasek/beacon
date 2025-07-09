@@ -109,7 +109,6 @@ func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 	if ShouldCheckWebServices(db, config, now) {
 		logger.Info("Checking web services...")
 		err = CheckWebServices(db, config.AllServices())
-		// TODO: might want to continue on error here
 		if err != nil {
 			return err
 		}

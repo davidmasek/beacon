@@ -26,7 +26,6 @@ def _get(url, headers=None):
     return requests.get(url, headers=headers)
 
 
-# todo: refactor
 def main():
     try:
         # print extra info about build

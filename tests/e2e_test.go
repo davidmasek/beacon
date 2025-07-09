@@ -44,8 +44,7 @@ func TestEndToEndHeartbeat(t *testing.T) {
 	require.NoError(t, err)
 	defer server.Close()
 
-	// Is the sleep needed? Seems to work fine without
-	// TODO: sometimes needed ... retry for Post might be nicer?
+	// Give server time to start
 	time.Sleep(100 * time.Millisecond)
 
 	t.Log("Record heartbeat")
@@ -71,7 +70,6 @@ func TestEndToEndHeartbeat(t *testing.T) {
 	assert.Contains(t, html, serviceNameSecond)
 }
 
-// TODO: could replace with resty ?
 func Post(suffix string, t *testing.T, port int) string {
 	resp, err := http.Post(fmt.Sprintf("http://localhost:%d%s", port, suffix), "application/json", nil)
 	if err != nil {
@@ -102,7 +100,6 @@ func Post(suffix string, t *testing.T, port int) string {
 	return ""
 }
 
-// TODO: could replace with resty ?
 func Get(suffix string, t *testing.T, port int) string {
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", port, suffix))
 	if err != nil {
