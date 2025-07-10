@@ -2,84 +2,15 @@ package scheduler
 
 import (
 	"context"
-	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/davidmasek/beacon/conf"
-	"github.com/davidmasek/beacon/handlers"
 	"github.com/davidmasek/beacon/logging"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestRunSingle(t *testing.T) {
-	logger := logging.InitTest(t)
-
-	db := storage.NewTestDb(t)
-	defer db.Close()
-
-	beaconGithub := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Beacon Github Page"))
-	}))
-	defer beaconGithub.Close()
-	tsFail := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-	}))
-	defer tsFail.Close()
-	tsDisabled := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger.Error("Disabled server called - should not be called")
-		t.Fail()
-	}))
-	defer tsDisabled.Close()
-	configTemplate := `
-services:
-  beacon-github:
-    url: "%s"
-    status:
-      - 200
-    content:
-      - Beacon
-  beacon-periodic-checker:
-  example-basic-web:
-    url: "%s"
-  example-temp-disable:
-    url: "%s"
-    enabled: false`
-	configStr := fmt.Sprintf(configTemplate, beaconGithub.URL, tsFail.URL, tsDisabled.URL)
-
-	config, err := conf.ConfigFromBytes([]byte(configStr))
-	require.NoError(t, err)
-	// disable emails for the test
-	config.EmailConf.Enabled = "false"
-
-	tmp, err := os.CreateTemp("", "beacon-test-report-*.html")
-	require.NoError(t, err)
-	tmp_file := tmp.Name()
-	defer os.Remove(tmp_file)
-	t.Logf("Using tmp file: %q\n", tmp_file)
-
-	config.ReportName = tmp_file
-	err = RunSingle(db, config, time.Now())
-	require.NoError(t, err)
-	require.FileExists(t, tmp_file)
-
-	dat, err := os.ReadFile(tmp_file)
-	require.NoError(t, err)
-	require.NotEmpty(t, dat, "Report is empty")
-	t.Log(string(dat))
-	content := string(dat)
-	require.Contains(t, content, "<html")
-	require.Contains(t, content, "beacon-github")
-	require.Contains(t, content, "beacon-periodic-checker")
-	require.Contains(t, content, "example-basic-web")
-	require.Contains(t, content, "example-temp-disable")
-}
 
 func TestSentinelCreatedOnlyOnce(t *testing.T) {
 	logging.InitTest(t)
@@ -172,21 +103,21 @@ report_time: 10
 
 	// report created @ tSameDayLater
 	err = db.CreateTaskLog(
-		storage.TaskInput{TaskName: "report", Status: string(handlers.TASK_OK), Timestamp: tSameDayLater, Details: ""})
+		storage.TaskInput{TaskName: "report", Status: string(storage.TASK_OK), Timestamp: tSameDayLater, Details: ""})
 	require.NoError(t, err)
 	// -> should report next day after configured time or later
 	assertShouldReport(false, false, false, true, true)
 
 	// report created @ tNextDayEarly
 	err = db.CreateTaskLog(
-		storage.TaskInput{TaskName: "report", Status: string(handlers.TASK_OK), Timestamp: tNextDayEarly, Details: ""})
+		storage.TaskInput{TaskName: "report", Status: string(storage.TASK_OK), Timestamp: tNextDayEarly, Details: ""})
 	require.NoError(t, err)
 	// -> should not report same day again
 	assertShouldReport(false, false, false, false, true)
 
 	// report failed @ tNextDayNoon
 	err = db.CreateTaskLog(
-		storage.TaskInput{TaskName: "report", Status: string(handlers.TASK_ERROR), Timestamp: tNextDayNoon, Details: ""})
+		storage.TaskInput{TaskName: "report", Status: string(storage.TASK_ERROR), Timestamp: tNextDayNoon, Details: ""})
 	require.NoError(t, err)
 	// -> should retry
 	got, err := ShouldReport(db, config, tNextDayNoon.Add(time.Hour))
@@ -199,7 +130,7 @@ func TestStart(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	calledCounter := 0
 	t.Log("Starting...")
-	startFunction(ctx, time.Microsecond, func(time.Time) error {
+	StartFunction(ctx, time.Microsecond, func(time.Time) error {
 		t.Log("Called")
 		calledCounter += 1
 		cancel()
@@ -218,7 +149,7 @@ func TestStartCancel(t *testing.T) {
 	cancel()
 	calledCounter := 0
 	t.Log("Starting...")
-	startFunction(ctx, time.Microsecond, func(time.Time) error {
+	StartFunction(ctx, time.Microsecond, func(time.Time) error {
 		t.Log("Called")
 		calledCounter += 1
 		return nil

@@ -3,7 +3,7 @@ package cmd
 import (
 	"time"
 
-	"github.com/davidmasek/beacon/handlers"
+	"github.com/davidmasek/beacon/reporting"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/spf13/cobra"
 )
@@ -23,11 +23,11 @@ var reportCmd = &cobra.Command{
 			return err
 		}
 		defer db.Close()
-		reports, err := handlers.GenerateReport(db, config)
+		reports, err := reporting.GenerateReport(db, config)
 		if err != nil {
 			return err
 		}
-		return handlers.SaveSendReport(reports, db, config, time.Now())
+		return reporting.SaveSendReport(reports, db, config, time.Now())
 	},
 }
 

@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/davidmasek/beacon/conf"
-	"github.com/davidmasek/beacon/handlers"
 	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
+	"github.com/davidmasek/beacon/web_server"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -40,7 +40,7 @@ func TestEndToEndHeartbeat(t *testing.T) {
 	serverPort := 9000
 	config.Port = serverPort
 	t.Logf("Starting server on port %d\n", serverPort)
-	server, err := handlers.StartServer(db, config)
+	server, err := web_server.StartServer(db, config)
 	require.NoError(t, err)
 	defer server.Close()
 

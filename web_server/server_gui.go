@@ -1,4 +1,4 @@
-package handlers
+package web_server
 
 import (
 	"embed"
@@ -12,6 +12,7 @@ import (
 	"github.com/davidmasek/beacon/conf"
 	"github.com/davidmasek/beacon/logging"
 	"github.com/davidmasek/beacon/monitor"
+	"github.com/davidmasek/beacon/scheduler"
 	"github.com/davidmasek/beacon/storage"
 	"go.uber.org/zap"
 )
@@ -23,6 +24,25 @@ const (
 	SUMMARY_STATS_LOOKBACK = -30 * 24 * time.Hour
 	SUMMARY_STATS_INTERVAL = 30 * time.Minute
 )
+
+// Human-readable time difference (e.g., "5 minutes ago")
+func TimeAgo(t time.Time) string {
+	duration := time.Since(t)
+	switch {
+	case duration.Hours() > 24:
+		return fmt.Sprintf("%d days ago", int(duration.Hours()/24))
+	case duration.Hours() == 1:
+		return fmt.Sprintf("%d hour ago", int(duration.Hours()))
+	case duration.Hours() >= 1:
+		return fmt.Sprintf("%d hours ago", int(duration.Hours()))
+	case duration.Minutes() == 1:
+		return fmt.Sprintf("%d minute ago", int(duration.Minutes()))
+	case duration.Minutes() >= 1:
+		return fmt.Sprintf("%d minutes ago", int(duration.Minutes()))
+	default:
+		return "just now"
+	}
+}
 
 // Show services status
 func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
@@ -150,14 +170,14 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 			lastReportTime = "never"
 			nextReportAfter = "error"
 			logger.Error("DB not properly initialized! No report task found")
-		} else if lastReport.Status == string(TASK_SENTINEL) {
+		} else if lastReport.Status == string(storage.TASK_SENTINEL) {
 			lastReportTime = "never"
-			nextReportAfter = NextReportTime(config, lastReport.Timestamp).
+			nextReportAfter = scheduler.NextReportTime(config, lastReport.Timestamp).
 				In(config.Timezone.Location).Format(timeFormat)
 		} else {
 			lastReportTime = lastReport.Timestamp.In(config.Timezone.Location).Format(timeFormat)
 			lastReportStatus = lastReport.Status
-			nextReportAfter = NextReportTime(config, lastReport.Timestamp).
+			nextReportAfter = scheduler.NextReportTime(config, lastReport.Timestamp).
 				In(config.Timezone.Location).Format(timeFormat)
 		}
 		if !config.EmailConf.IsEnabled() {

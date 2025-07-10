@@ -1,4 +1,4 @@
-package handlers
+package web_server
 
 import (
 	"net/http"

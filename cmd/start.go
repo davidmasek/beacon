@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/davidmasek/beacon/handlers"
 	"github.com/davidmasek/beacon/logging"
-	"github.com/davidmasek/beacon/scheduler"
+	"github.com/davidmasek/beacon/reporting"
 	"github.com/davidmasek/beacon/storage"
+	"github.com/davidmasek/beacon/web_server"
 	"github.com/spf13/cobra"
 )
 
@@ -47,7 +47,7 @@ var startCmd = &cobra.Command{
 		if portSet {
 			config.Port = port
 		}
-		server, err := handlers.StartServer(db, config)
+		server, err := web_server.StartServer(db, config)
 		if err != nil {
 			return err
 		}
@@ -58,7 +58,7 @@ var startCmd = &cobra.Command{
 		}
 
 		ctx, cancelScheduler := context.WithCancel(context.Background())
-		go scheduler.Start(ctx, db, config)
+		go reporting.Start(ctx, db, config)
 
 		if stopServer {
 			server.Close()

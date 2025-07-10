@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/davidmasek/beacon/conf"
 	"github.com/davidmasek/beacon/logging"
 	"github.com/davidmasek/beacon/storage"
 	"go.uber.org/zap"
@@ -21,6 +22,30 @@ type WebConfig struct {
 }
 
 const DEFAULT_TIMEOUT = 5
+
+func CheckWebServices(db storage.Storage, services []conf.ServiceConfig) error {
+	// TODO: using "legacy" approach to get this done quickly
+	// should look into monitor.CheckWebsites refactor
+	// and getting rid of WebConfig struct
+	websites := make(map[string]WebConfig)
+	for _, service := range services {
+		// skip disabled
+		if !service.Enabled {
+			continue
+		}
+		// skip non-website services
+		if service.Url == "" {
+			continue
+		}
+
+		websites[service.Id] = WebConfig{
+			Url:         service.Url,
+			HttpStatus:  service.HttpStatus,
+			BodyContent: service.BodyContent,
+		}
+	}
+	return CheckWebsites(db, websites)
+}
 
 // Check websites and save the resulting HealthChecks to storage
 func CheckWebsites(db storage.Storage, websites map[string]WebConfig) error {

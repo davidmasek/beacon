@@ -5,9 +5,7 @@ import (
 	"time"
 
 	"github.com/davidmasek/beacon/conf"
-	"github.com/davidmasek/beacon/handlers"
 	"github.com/davidmasek/beacon/logging"
-	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
 	"go.uber.org/zap"
 )
@@ -20,45 +18,27 @@ func ShouldCheckWebServices(db storage.Storage, config *conf.Config, now time.Ti
 	return true
 }
 
-func CheckWebServices(db storage.Storage, services []conf.ServiceConfig) error {
-	// TODO: using "legacy" approach to get this done quickly
-	// should look into monitor.CheckWebsites refactor
-	// and getting rid of WebConfig struct
-	websites := make(map[string]monitor.WebConfig)
-	for _, service := range services {
-		// skip disabled
-		if !service.Enabled {
-			continue
-		}
-		// skip non-website services
-		if service.Url == "" {
-			continue
-		}
-
-		websites[service.Id] = monitor.WebConfig{
-			Url:         service.Url,
-			HttpStatus:  service.HttpStatus,
-			BodyContent: service.BodyContent,
-		}
+// Calculate when the next report should happen based on last report time.
+// No previous reports or failed reporting tasks are not considered here.
+// See `ShouldReport` for more complex logic.
+//
+// Since timezones are hard, there might be some edge cases with weird behavior.
+// Suppose lastReportTime is 2025-01-01 01:00 in Brisbane (UTC+10)
+// and we want the next report time in Honolulu (UTC-10).
+// The result will be 2025-01-01 09:00:00 -1000 HST (in Pacific/Honolulu).
+// Is that what you expect? Note that adding the 24 hours first and
+// then converting to (target) local time leads to different result.
+func NextReportTime(config *conf.Config, lastReportTime time.Time) time.Time {
+	lastReportTime = lastReportTime.In(config.Timezone.Location)
+	nextReportDay := lastReportTime.AddDate(0, 0, 1)
+	// if ReportOnDays is set, then keep adding days until we get one that is allowed
+	for !config.ReportOnDays.IsEmpty() && !config.ReportOnDays.Contains(nextReportDay) {
+		nextReportDay = nextReportDay.AddDate(0, 0, 1)
 	}
-	return monitor.CheckWebsites(db, websites)
-}
-
-// Add placeholder (sentinel) "report" task to bootstrap calculation of next report time.
-func InitializeSentinel(db storage.Storage, now time.Time) error {
-	logger := logging.Get()
-	task, err := db.LatestTaskLog("report")
-	if err != nil {
-		return err
-	}
-	// skip creation if any value already exists
-	if task != nil {
-		return nil
-	}
-	logger.Infow("Creating sentinel report task", "time", now)
-	err = db.CreateTaskLog(storage.TaskInput{
-		TaskName: "report", Status: string(handlers.TASK_SENTINEL), Timestamp: now, Details: ""})
-	return err
+	nextReportTime := time.Date(
+		nextReportDay.Year(), nextReportDay.Month(), nextReportDay.Day(),
+		config.ReportAfter, 0, 0, 0, nextReportDay.Location())
+	return nextReportTime
 }
 
 // Decide if report should be generated and send at given time `query`.
@@ -75,11 +55,11 @@ func ShouldReport(db storage.Storage, config *conf.Config, query time.Time) (boo
 		return true, nil
 	}
 	// retry immediately if previous attempt failed
-	if task.Status == string(handlers.TASK_ERROR) {
+	if task.Status == string(storage.TASK_ERROR) {
 		return true, nil
 	}
 
-	nextReportTime := handlers.NextReportTime(config, task.Timestamp)
+	nextReportTime := NextReportTime(config, task.Timestamp)
 	isAfter := query.After(nextReportTime)
 	return isAfter, nil
 }
@@ -93,7 +73,7 @@ func ShouldReportFailedService(db storage.Storage, cfg *conf.ServiceConfig, quer
 	if task == nil {
 		return true, nil
 	}
-	if task.Status == string(handlers.TASK_ERROR) {
+	if task.Status == string(storage.TASK_ERROR) {
 		return true, nil
 	}
 	nextReportTime := task.Timestamp.Add(FailedServiceReportInterval)
@@ -101,79 +81,7 @@ func ShouldReportFailedService(db storage.Storage, cfg *conf.ServiceConfig, quer
 	return isAfter, nil
 }
 
-func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
-	logger := logging.Get()
-	logger.Info("Do scheduling work")
-
-	var err error = nil
-	if ShouldCheckWebServices(db, config, now) {
-		logger.Info("Checking web services...")
-		err = CheckWebServices(db, config.AllServices())
-		if err != nil {
-			return err
-		}
-	}
-	doReport, err := ShouldReport(db, config, now)
-	if err != nil {
-		return err
-	}
-	reports, err := handlers.GenerateReport(db, config)
-	if err != nil {
-		return err
-	}
-	if doReport {
-		logger.Info("Reporting...")
-		err = handlers.SaveSendReport(reports, db, config, now)
-		if err != nil {
-			return err
-		}
-	}
-	for _, report := range reports {
-		if report.ServiceStatus == monitor.STATUS_OK {
-			continue
-		}
-		logger.Debugw("Service not OK", "service", report.ServiceCfg.Id)
-		doReport, err = ShouldReportFailedService(db, &report.ServiceCfg, now)
-		if err != nil {
-			return err
-		}
-		if doReport {
-			logger.Infow("Reporting failed service", "service", report.ServiceCfg.Id)
-			err = handlers.ReportFailedService(db, config, &report.ServiceCfg, now)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return err
-}
-
-// Run periodic jobs.
-// Config: SCHEDULER_PERIOD (duration)
-//
-// Run first pass immediately.
-//
-// Will not call run next job again until previous one returns, even
-// if specified interval passes.
-func Start(ctx context.Context, db storage.Storage, config *conf.Config) {
-	logger := logging.Get()
-	checkInterval := config.SchedulerPeriod
-	err := InitializeSentinel(db, time.Now())
-	if err != nil {
-		logger.Errorw("Failed to initialize job sentinel", zap.Error(err))
-	}
-
-	if err = RunSingle(db, config, time.Now()); err != nil {
-		logger.Errorw("Scheduling work failed", zap.Error(err))
-	}
-
-	logger.Infow("Starting scheduler", "checkInterval", checkInterval)
-	startFunction(ctx, checkInterval, func(now time.Time) error {
-		return RunSingle(db, config, now)
-	})
-}
-
-func startFunction(ctx context.Context, interval time.Duration, job func(time.Time) error) {
+func StartFunction(ctx context.Context, interval time.Duration, job func(time.Time) error) {
 	logger := logging.Get()
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -195,4 +103,21 @@ func startFunction(ctx context.Context, interval time.Duration, job func(time.Ti
 			}
 		}
 	}
+}
+
+// Add placeholder (sentinel) "report" task to bootstrap calculation of next report time.
+func InitializeSentinel(db storage.Storage, now time.Time) error {
+	logger := logging.Get()
+	task, err := db.LatestTaskLog("report")
+	if err != nil {
+		return err
+	}
+	// skip creation if any value already exists
+	if task != nil {
+		return nil
+	}
+	logger.Infow("Creating sentinel report task", "time", now)
+	err = db.CreateTaskLog(storage.TaskInput{
+		TaskName: "report", Status: string(storage.TASK_SENTINEL), Timestamp: now, Details: ""})
+	return err
 }
