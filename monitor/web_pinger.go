@@ -47,15 +47,20 @@ func CheckWebServices(db storage.Storage, services []conf.ServiceConfig) error {
 	return CheckWebsites(db, websites)
 }
 
+func checkWebsite(config *WebConfig) (ServiceStatus, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), DEFAULT_TIMEOUT*time.Second)
+	defer cancel()
+	serviceStatus, err := config.CheckWebsite(ctx)
+	return serviceStatus, err
+}
+
 // Check websites and save the resulting HealthChecks to storage
 func CheckWebsites(db storage.Storage, websites map[string]WebConfig) error {
 	logger := logging.Get()
-	ctx, cancel := context.WithTimeout(context.Background(), DEFAULT_TIMEOUT*time.Second)
-	defer cancel()
 	for service, config := range websites {
 		logger.Debugw("Checking website", "service", service, "check_config", config)
 		timestamp := time.Now()
-		serviceStatus, err := config.CheckWebsite(ctx)
+		serviceStatus, err := checkWebsite(&config)
 		metadata := make(map[string]string)
 		metadata["status"] = string(serviceStatus)
 		if err != nil {
