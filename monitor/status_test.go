@@ -1,11 +1,10 @@
-package handlers
+package monitor
 
 import (
 	"testing"
 	"time"
 
 	"github.com/davidmasek/beacon/conf"
-	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
 	"github.com/stretchr/testify/require"
 )
@@ -24,16 +23,16 @@ func TestGetServiceStatus(t *testing.T) {
 		Timeout: 24 * time.Hour,
 	}
 
-	status := monitor.GetServiceStatus(cfg, checks)
-	require.Equal(t, monitor.STATUS_OK, status)
+	status := GetServiceStatus(cfg, checks)
+	require.Equal(t, STATUS_OK, status)
 
 	hc.Timestamp = hc.Timestamp.Add(-time.Hour)
-	status = monitor.GetServiceStatus(cfg, checks)
-	require.Equal(t, monitor.STATUS_OK, status)
+	status = GetServiceStatus(cfg, checks)
+	require.Equal(t, STATUS_OK, status)
 
 	hc.Timestamp = hc.Timestamp.Add(-30 * time.Hour)
-	status = monitor.GetServiceStatus(cfg, checks)
-	require.Equal(t, monitor.STATUS_FAIL, status)
+	status = GetServiceStatus(cfg, checks)
+	require.Equal(t, STATUS_FAIL, status)
 }
 
 func TestGetServiceStatusWithError(t *testing.T) {
@@ -52,7 +51,7 @@ func TestGetServiceStatusWithError(t *testing.T) {
 		Timeout: 24 * time.Hour,
 	}
 
-	status := monitor.GetServiceStatus(cfg, checks)
+	status := GetServiceStatus(cfg, checks)
 
-	require.Equal(t, monitor.STATUS_FAIL, status)
+	require.Equal(t, STATUS_FAIL, status)
 }

@@ -1,6 +1,7 @@
-package handlers
+package reporting
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -9,43 +10,10 @@ import (
 	"github.com/davidmasek/beacon/conf"
 	"github.com/davidmasek/beacon/logging"
 	"github.com/davidmasek/beacon/monitor"
+	"github.com/davidmasek/beacon/scheduler"
 	"github.com/davidmasek/beacon/storage"
 	"go.uber.org/zap"
 )
-
-// Calculate when the next report should happen based on last report time.
-// No previous reports or failed reporting tasks are not considered here.
-// See `ShouldReport` for more complex logic.
-//
-// Since timezones are hard, there might be some edge cases with weird behavior.
-// Suppose lastReportTime is 2025-01-01 01:00 in Brisbane (UTC+10)
-// and we want the next report time in Honolulu (UTC-10).
-// The result will be 2025-01-01 09:00:00 -1000 HST (in Pacific/Honolulu).
-// Is that what you expect? Note that adding the 24 hours first and
-// then converting to (target) local time leads to different result.
-//
-// TODO: refactor packages
-// - it does not make sense for this one report scheduling function to be here
-// if all the others are in scheduler
-// - moving it to scheduler creates circular dependency
-// - probably makes more sense to move stuff from scheduler here anyway
-// - but at that moment `handlers` is too big of a package (which it is anyway by now)
-// -> split handlers, create:
-// - reporting/report
-// - server / web_gui / smth
-// - keep scheduler with reduced functionality ?
-func NextReportTime(config *conf.Config, lastReportTime time.Time) time.Time {
-	lastReportTime = lastReportTime.In(config.Timezone.Location)
-	nextReportDay := lastReportTime.AddDate(0, 0, 1)
-	// if ReportOnDays is set, then keep adding days until we get one that is allowed
-	for !config.ReportOnDays.IsEmpty() && !config.ReportOnDays.Contains(nextReportDay) {
-		nextReportDay = nextReportDay.AddDate(0, 0, 1)
-	}
-	nextReportTime := time.Date(
-		nextReportDay.Year(), nextReportDay.Month(), nextReportDay.Day(),
-		config.ReportAfter, 0, 0, 0, nextReportDay.Location())
-	return nextReportTime
-}
 
 func GenerateReport(db storage.Storage, config *conf.Config) ([]ServiceReport, error) {
 	logger := logging.Get()
@@ -102,10 +70,10 @@ func SaveSendReport(reports []ServiceReport, db storage.Storage, config *conf.Co
 		err = errors.Join(err, emailErr)
 	}
 
-	status := TASK_OK
+	status := storage.TASK_OK
 	details := ""
 	if err != nil {
-		status = TASK_ERROR
+		status = storage.TASK_ERROR
 		details = err.Error()
 
 	}
@@ -129,12 +97,84 @@ func ReportFailedService(db storage.Storage, config *conf.Config, serviceCfg *co
 		err = SendMail(&config.EmailConf, msg, msg)
 	}
 
-	status := TASK_OK
+	status := storage.TASK_OK
 	if err != nil {
-		status = TASK_ERROR
+		status = storage.TASK_ERROR
 
 	}
 	dbErr := db.CreateTaskLog(storage.TaskInput{
 		TaskName: "report_fail", Status: string(status), Timestamp: now, Details: serviceCfg.Id})
 	return errors.Join(err, dbErr)
+}
+
+func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
+	logger := logging.Get()
+	logger.Info("Do scheduling work")
+
+	var err error = nil
+	if scheduler.ShouldCheckWebServices(db, config, now) {
+		logger.Info("Checking web services...")
+		err = monitor.CheckWebServices(db, config.AllServices())
+		if err != nil {
+			return err
+		}
+	}
+	doReport, err := scheduler.ShouldReport(db, config, now)
+	if err != nil {
+		return err
+	}
+	reports, err := GenerateReport(db, config)
+	if err != nil {
+		return err
+	}
+	if doReport {
+		logger.Info("Reporting...")
+		err = SaveSendReport(reports, db, config, now)
+		if err != nil {
+			return err
+		}
+	}
+	for _, report := range reports {
+		if report.ServiceStatus == monitor.STATUS_OK {
+			continue
+		}
+		logger.Debugw("Service not OK", "service", report.ServiceCfg.Id)
+		doReport, err = scheduler.ShouldReportFailedService(db, &report.ServiceCfg, now)
+		if err != nil {
+			return err
+		}
+		if doReport {
+			logger.Infow("Reporting failed service", "service", report.ServiceCfg.Id)
+			err = ReportFailedService(db, config, &report.ServiceCfg, now)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+// Run periodic jobs.
+// Config: SCHEDULER_PERIOD (duration)
+//
+// Run first pass immediately.
+//
+// Will not call run next job again until previous one returns, even
+// if specified interval passes.
+func Start(ctx context.Context, db storage.Storage, config *conf.Config) {
+	logger := logging.Get()
+	checkInterval := config.SchedulerPeriod
+	err := scheduler.InitializeSentinel(db, time.Now())
+	if err != nil {
+		logger.Errorw("Failed to initialize job sentinel", zap.Error(err))
+	}
+
+	if err = RunSingle(db, config, time.Now()); err != nil {
+		logger.Errorw("Scheduling work failed", zap.Error(err))
+	}
+
+	logger.Infow("Starting scheduler", "checkInterval", checkInterval)
+	scheduler.StartFunction(ctx, checkInterval, func(now time.Time) error {
+		return RunSingle(db, config, now)
+	})
 }

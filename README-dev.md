@@ -23,38 +23,31 @@ air start
   - 🟢 stable API
     - 🟢 needs finalization on "heartbeat"-only endpoints
     - 🟢 stabilize response - use JSON
-    - 🟤 (low) endpoints for HealthCheck
-    - 🟢 go with `/services/<id>/action` structure
+    - 🟢 `/services/<id>/action` URL structure
   - 🟢 token auth
   - 🟢 (ignore unknown / require auth) if enabled
 - 🟢 web GUI
   - 🟢 display the main information
-  - ~~should also support management~~
-    - management supported by config files
+    - management supported by a config file
   - 🟡 support auth
   - 🟢 unify ports - run on same port as HB listener
 - 🟢 website monitor (periodic website checking)
   - 🟢 basic version done
-  - 🟢 should decouple "web scraping" and reporting
+  - 🟢 decoupled "web scraping" and reporting
 - 🟢 notifications
   - 🟢 email reporting
-  - 🟢 local HTML report
   - 🟢 periodical monitoring
-- 🟡 reports
-  - yellow to keep eye on UX
-  - 🟢 basic flow
-  - 🟢 should take config file into account (currently only looks at DB)
-- 🟡 heartbeat/website management
+- 🟢 reports
+  - 🟢 email reporting
+- 🟢 heartbeat/website management
   - yellow - works, but needs some final touches
   - 🟢 specified in config
   - 🟡 some support for "manual" services without config - for heartbeats only
     - up to debate if these should be kept
-  - 🟤 delete old/unused service
-- 🟡 friendly app configuration / documentation
-  - 🟡 DB needs some documentation
+- 🟢 friendly app configuration / documentation
   - 🟢 relative file paths handled
   - 🟢 config file refactor
-    - 🟢 config file should be required, but provided by default (inside homedir?)
+    - 🟢 config file should required, but provided by default
   - 🟢 config format done
   - 🟢 main documentation done
   - 🟢 docker + dockerhub
@@ -77,29 +70,16 @@ air start
     - maybe for reports in the future
   - 🟡 end-to-end Docker test
     - should cover also report content
-- 🟤 user management
-  - 🟢 DB prepared
-  - would enable multi-user server
-  - would enable public server
-  - 🟤 auth
-  - 🟤 actual usage of users
-  - 🟤 registration / login
-
-
-## Run with Live Reload
-
-```sh
-# see https://github.com/air-verse/air for details
-air start
-```
-
+- TODO: db cleanup
+  - remove old record?
+  - delete services option?
 
 ## 🛠️ Implementation
 
 Some design choices:
 - storage:
     - single type called HealthCheck for storing data in DB
-    - need for different fields will be accommodated by using Metadata field, which is dynamic map
+    - need for different fields will be accommodated by using Metadata field (JSON)
     - for creating new data there is HealthCheckInput - currently same as HealthCheck without ID, in future possibly different
 - naming conventions:
     - ID will be lowercased when used in variable name - FooId - to follow CamelCaseNaming

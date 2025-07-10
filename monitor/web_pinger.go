@@ -9,12 +9,13 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/davidmasek/beacon/conf"
 	"github.com/davidmasek/beacon/logging"
 	"github.com/davidmasek/beacon/storage"
 	"go.uber.org/zap"
 )
 
-type WebConfig struct {
+type webConfig struct {
 	Url         string   `mapstructure:"url"`
 	HttpStatus  []int    `mapstructure:"status"`
 	BodyContent []string `mapstructure:"content"`
@@ -23,14 +24,27 @@ type WebConfig struct {
 const DEFAULT_TIMEOUT = 5
 
 // Check websites and save the resulting HealthChecks to storage
-func CheckWebsites(db storage.Storage, websites map[string]WebConfig) error {
+func CheckWebServices(db storage.Storage, services []conf.ServiceConfig) error {
 	logger := logging.Get()
-	ctx, cancel := context.WithTimeout(context.Background(), DEFAULT_TIMEOUT*time.Second)
-	defer cancel()
-	for service, config := range websites {
-		logger.Debugw("Checking website", "service", service, "check_config", config)
+
+	for _, service := range services {
+		// skip disabled
+		if !service.Enabled {
+			continue
+		}
+		// skip non-website services
+		if service.Url == "" {
+			continue
+		}
+
+		logger.Debugw("Checking website", "service", service.Id, "check_config", service)
+
 		timestamp := time.Now()
-		serviceStatus, err := config.CheckWebsite(ctx)
+		serviceStatus, err := checkWebsite(&webConfig{
+			Url:         service.Url,
+			HttpStatus:  service.HttpStatus,
+			BodyContent: service.BodyContent,
+		})
 		metadata := make(map[string]string)
 		metadata["status"] = string(serviceStatus)
 		if err != nil {
@@ -38,7 +52,7 @@ func CheckWebsites(db storage.Storage, websites map[string]WebConfig) error {
 			metadata["error"] = err.Error()
 		}
 		healthCheck := &storage.HealthCheckInput{
-			ServiceId: service,
+			ServiceId: service.Id,
 			Timestamp: timestamp,
 			Metadata:  metadata,
 		}
@@ -52,11 +66,17 @@ func CheckWebsites(db storage.Storage, websites map[string]WebConfig) error {
 		}
 	}
 	return nil
+}
 
+func checkWebsite(config *webConfig) (ServiceStatus, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), DEFAULT_TIMEOUT*time.Second)
+	defer cancel()
+	serviceStatus, err := config.checkWebsite(ctx)
+	return serviceStatus, err
 }
 
 // Check website and return status
-func (config *WebConfig) CheckWebsite(ctx context.Context) (ServiceStatus, error) {
+func (config *webConfig) checkWebsite(ctx context.Context) (ServiceStatus, error) {
 	logger := logging.Get()
 	req, err := http.NewRequestWithContext(ctx, "GET", config.Url, nil)
 	if err != nil {

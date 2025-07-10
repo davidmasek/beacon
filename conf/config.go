@@ -162,15 +162,13 @@ func (s Config) GoString() string {
 	return "Config{*****}"
 }
 
-// TODO: keep this as Config strict and if needed to write than marshal?
-//
 //go:embed config.default.yaml
-var DEFAULT_CONFIG []byte
+var DEFAULT_CONFIG_FILE []byte
 
 func ensureConfigFile(path string) error {
 	_, err := os.Stat(path)
 	if errors.Is(err, fs.ErrNotExist) {
-		err = os.WriteFile(path, DEFAULT_CONFIG, 0644)
+		err = os.WriteFile(path, DEFAULT_CONFIG_FILE, 0644)
 		return err
 	}
 	return err

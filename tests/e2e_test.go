@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/davidmasek/beacon/conf"
-	"github.com/davidmasek/beacon/handlers"
 	"github.com/davidmasek/beacon/monitor"
 	"github.com/davidmasek/beacon/storage"
+	"github.com/davidmasek/beacon/web_server"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -40,12 +40,11 @@ func TestEndToEndHeartbeat(t *testing.T) {
 	serverPort := 9000
 	config.Port = serverPort
 	t.Logf("Starting server on port %d\n", serverPort)
-	server, err := handlers.StartServer(db, config)
+	server, err := web_server.StartServer(db, config)
 	require.NoError(t, err)
 	defer server.Close()
 
-	// Is the sleep needed? Seems to work fine without
-	// TODO: sometimes needed ... retry for Post might be nicer?
+	// Give server time to start
 	time.Sleep(100 * time.Millisecond)
 
 	t.Log("Record heartbeat")
@@ -71,7 +70,6 @@ func TestEndToEndHeartbeat(t *testing.T) {
 	assert.Contains(t, html, serviceNameSecond)
 }
 
-// TODO: could replace with resty ?
 func Post(suffix string, t *testing.T, port int) string {
 	resp, err := http.Post(fmt.Sprintf("http://localhost:%d%s", port, suffix), "application/json", nil)
 	if err != nil {
@@ -102,7 +100,6 @@ func Post(suffix string, t *testing.T, port int) string {
 	return ""
 }
 
-// TODO: could replace with resty ?
 func Get(suffix string, t *testing.T, port int) string {
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", port, suffix))
 	if err != nil {

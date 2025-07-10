@@ -1,17 +1,33 @@
-package handlers
+package reporting
 
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/davidmasek/beacon/conf"
 	"github.com/davidmasek/beacon/logging"
 	"github.com/davidmasek/beacon/monitor"
+	"github.com/davidmasek/beacon/storage"
 	"github.com/wneessen/go-mail"
 	"go.uber.org/zap"
 )
+
+type ServiceReport struct {
+	ServiceStatus     monitor.ServiceStatus
+	LatestHealthCheck *storage.HealthCheck
+	ServiceCfg        conf.ServiceConfig
+}
+
+func prettyPrint(details map[string]string) string {
+	jsonData, err := json.MarshalIndent(details, "", "  ")
+	if err != nil {
+		panic(fmt.Errorf("failed to marshal details map: %w", err))
+	}
+	return string(jsonData)
+}
 
 func sendReport(reports []ServiceReport, emailConfig *conf.EmailConfig) error {
 	var buffer bytes.Buffer
