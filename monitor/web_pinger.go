@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type WebConfig struct {
+type webConfig struct {
 	Url         string   `mapstructure:"url"`
 	HttpStatus  []int    `mapstructure:"status"`
 	BodyContent []string `mapstructure:"content"`
@@ -23,11 +23,10 @@ type WebConfig struct {
 
 const DEFAULT_TIMEOUT = 5
 
+// Check websites and save the resulting HealthChecks to storage
 func CheckWebServices(db storage.Storage, services []conf.ServiceConfig) error {
-	// TODO: using "legacy" approach to get this done quickly
-	// should look into monitor.CheckWebsites refactor
-	// and getting rid of WebConfig struct
-	websites := make(map[string]WebConfig)
+	logger := logging.Get()
+
 	for _, service := range services {
 		// skip disabled
 		if !service.Enabled {
@@ -38,29 +37,14 @@ func CheckWebServices(db storage.Storage, services []conf.ServiceConfig) error {
 			continue
 		}
 
-		websites[service.Id] = WebConfig{
+		logger.Debugw("Checking website", "service", service.Id, "check_config", service)
+
+		timestamp := time.Now()
+		serviceStatus, err := checkWebsite(&webConfig{
 			Url:         service.Url,
 			HttpStatus:  service.HttpStatus,
 			BodyContent: service.BodyContent,
-		}
-	}
-	return CheckWebsites(db, websites)
-}
-
-func checkWebsite(config *WebConfig) (ServiceStatus, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), DEFAULT_TIMEOUT*time.Second)
-	defer cancel()
-	serviceStatus, err := config.CheckWebsite(ctx)
-	return serviceStatus, err
-}
-
-// Check websites and save the resulting HealthChecks to storage
-func CheckWebsites(db storage.Storage, websites map[string]WebConfig) error {
-	logger := logging.Get()
-	for service, config := range websites {
-		logger.Debugw("Checking website", "service", service, "check_config", config)
-		timestamp := time.Now()
-		serviceStatus, err := checkWebsite(&config)
+		})
 		metadata := make(map[string]string)
 		metadata["status"] = string(serviceStatus)
 		if err != nil {
@@ -68,7 +52,7 @@ func CheckWebsites(db storage.Storage, websites map[string]WebConfig) error {
 			metadata["error"] = err.Error()
 		}
 		healthCheck := &storage.HealthCheckInput{
-			ServiceId: service,
+			ServiceId: service.Id,
 			Timestamp: timestamp,
 			Metadata:  metadata,
 		}
@@ -82,11 +66,17 @@ func CheckWebsites(db storage.Storage, websites map[string]WebConfig) error {
 		}
 	}
 	return nil
+}
 
+func checkWebsite(config *webConfig) (ServiceStatus, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), DEFAULT_TIMEOUT*time.Second)
+	defer cancel()
+	serviceStatus, err := config.checkWebsite(ctx)
+	return serviceStatus, err
 }
 
 // Check website and return status
-func (config *WebConfig) CheckWebsite(ctx context.Context) (ServiceStatus, error) {
+func (config *webConfig) checkWebsite(ctx context.Context) (ServiceStatus, error) {
 	logger := logging.Get()
 	req, err := http.NewRequestWithContext(ctx, "GET", config.Url, nil)
 	if err != nil {

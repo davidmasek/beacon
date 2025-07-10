@@ -1,4 +1,4 @@
-package monitor_test
+package monitor
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/davidmasek/beacon/logging"
-	"github.com/davidmasek/beacon/monitor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +20,7 @@ func TestCheckWebsite(t *testing.T) {
 		bodyContent  []string
 		responseCode int
 		responseBody string
-		expectStatus monitor.ServiceStatus
+		expectStatus ServiceStatus
 		expectErr    bool
 	}{
 		{
@@ -30,7 +29,7 @@ func TestCheckWebsite(t *testing.T) {
 			bodyContent:  []string{"Hello", "Test"},
 			responseCode: 200,
 			responseBody: "Hello! This is a Test response.",
-			expectStatus: monitor.STATUS_OK,
+			expectStatus: STATUS_OK,
 			expectErr:    false,
 		},
 		{
@@ -39,7 +38,7 @@ func TestCheckWebsite(t *testing.T) {
 			bodyContent:  []string{"Ok"},
 			responseCode: 404,
 			responseBody: "Not found",
-			expectStatus: monitor.STATUS_FAIL,
+			expectStatus: STATUS_FAIL,
 			expectErr:    false, // Because we return STATUS_FAIL with nil err for unexpected status code
 		},
 		{
@@ -48,7 +47,7 @@ func TestCheckWebsite(t *testing.T) {
 			bodyContent:  []string{"Hello", "World"},
 			responseCode: 200,
 			responseBody: "Hello there but not the rest",
-			expectStatus: monitor.STATUS_FAIL,
+			expectStatus: STATUS_FAIL,
 			expectErr:    false, // Missing content => STATUS_FAIL, nil error
 		},
 	}
@@ -64,7 +63,7 @@ func TestCheckWebsite(t *testing.T) {
 			defer server.Close()
 
 			// Build your config
-			config := &monitor.WebConfig{
+			config := &webConfig{
 				Url:         server.URL,
 				HttpStatus:  tt.httpStatus,
 				BodyContent: tt.bodyContent,
@@ -73,7 +72,7 @@ func TestCheckWebsite(t *testing.T) {
 			// Call the method under test
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			gotStatus, gotErr := config.CheckWebsite(ctx)
+			gotStatus, gotErr := config.checkWebsite(ctx)
 
 			// Validate the results
 			assert.Equal(t, tt.expectStatus, gotStatus, "Unexpected service status.")
@@ -89,7 +88,7 @@ func TestCheckWebsite(t *testing.T) {
 func TestCheckWebsite_RequestError(t *testing.T) {
 	logging.InitTest(t)
 	// Provide an invalid URL to force http.Get to fail immediately.
-	config := &monitor.WebConfig{
+	config := &webConfig{
 		Url: "http://invalid.invalid:9999", // Should fail DNS/connection
 		// The following values won't matter because the request fails
 		HttpStatus:  []int{200},
@@ -98,8 +97,8 @@ func TestCheckWebsite_RequestError(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	gotStatus, gotErr := config.CheckWebsite(ctx)
-	assert.Equal(t, monitor.STATUS_FAIL, gotStatus, "Expected STATUS_FAIL when request cannot be made.")
+	gotStatus, gotErr := config.checkWebsite(ctx)
+	assert.Equal(t, STATUS_FAIL, gotStatus, "Expected STATUS_FAIL when request cannot be made.")
 	assert.Error(t, gotErr, "Expected a non-nil error for a failing request.")
 }
 
@@ -112,7 +111,7 @@ func TestCheckWebsite_BodyReadError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	config := &monitor.WebConfig{
+	config := &webConfig{
 		Url:         ts.URL,
 		HttpStatus:  []int{200},
 		BodyContent: []string{"anything"},
@@ -120,8 +119,8 @@ func TestCheckWebsite_BodyReadError(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	gotStatus, gotErr := config.CheckWebsite(ctx)
-	assert.Equal(t, monitor.STATUS_FAIL, gotStatus, "Expected STATUS_FAIL if body cannot be read.")
+	gotStatus, gotErr := config.checkWebsite(ctx)
+	assert.Equal(t, STATUS_FAIL, gotStatus, "Expected STATUS_FAIL if body cannot be read.")
 	assert.Error(t, gotErr, "Expected a read error.")
 }
 
@@ -134,7 +133,7 @@ func TestCheckWebsite_Timeout(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	config := &monitor.WebConfig{
+	config := &webConfig{
 		Url:        ts.URL,
 		HttpStatus: []int{200},
 	}
@@ -147,7 +146,7 @@ func TestCheckWebsite_Timeout(t *testing.T) {
 	defer cancel()
 
 	type result struct {
-		Status monitor.ServiceStatus
+		Status ServiceStatus
 		Err    error
 	}
 	done := make(chan result)
@@ -155,7 +154,7 @@ func TestCheckWebsite_Timeout(t *testing.T) {
 	start := time.Now()
 	// Check async to prevent hanging here forever
 	go func() {
-		status, err := config.CheckWebsite(ctx)
+		status, err := config.checkWebsite(ctx)
 		done <- result{status, err}
 	}()
 
@@ -167,7 +166,7 @@ func TestCheckWebsite_Timeout(t *testing.T) {
 		t.Fatalf("CheckWebsite took too long, elapsed: %v", elapsed)
 	}
 
-	assert.Equal(t, monitor.STATUS_FAIL, res.Status, "Expected STATUS_FAIL for a timeout")
+	assert.Equal(t, STATUS_FAIL, res.Status, "Expected STATUS_FAIL for a timeout")
 	assert.Error(t, res.Err, "Expected an error due to timeout")
 
 }
