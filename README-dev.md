@@ -39,12 +39,11 @@ air start
   - 🟢 periodical monitoring
 - 🟢 reports
   - 🟢 email reporting
-- 🟡 heartbeat/website management
+- 🟢 heartbeat/website management
   - yellow - works, but needs some final touches
   - 🟢 specified in config
   - 🟡 some support for "manual" services without config - for heartbeats only
     - up to debate if these should be kept
-  - 🟤 delete old/unused service (DB cleanup)
 - 🟢 friendly app configuration / documentation
   - 🟢 relative file paths handled
   - 🟢 config file refactor
@@ -71,6 +70,9 @@ air start
     - maybe for reports in the future
   - 🟡 end-to-end Docker test
     - should cover also report content
+- TODO: db cleanup
+  - remove old record?
+  - delete services option?
 
 ## 🛠️ Implementation
 
