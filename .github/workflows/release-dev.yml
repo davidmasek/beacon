@@ -1,9 +1,8 @@
-name: Build and Release
+name: Build and Release Dev
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [ "main" ]
 
 jobs:
   docker-hub:
@@ -20,8 +19,6 @@ jobs:
 
     - name: Build and Push Docker Image
       uses: docker/build-push-action@v5
-      env:
-        BEACON_VERSION: ${{ github.ref_name }}
       with:
         push: true
         file: ./Dockerfile
@@ -29,5 +26,4 @@ jobs:
           GIT_SHA=${{ github.sha }}
           GIT_REF=${{ github.ref_name }}
         tags: |
-          davidmasek42/beacon:latest
-          davidmasek42/beacon:${{ github.ref_name }}
+          davidmasek42/beacon:dev
