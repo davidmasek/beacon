@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS health_checks (
     metadata TEXT,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+CREATE INDEX IF NOT EXISTS idx_health_checks_timestamp
+ON health_checks(timestamp);
 
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,6 +25,9 @@ CREATE TABLE IF NOT EXISTS task_logs (
     status TEXT NOT NULL,
     details TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_task_logs_timestamp
+ON task_logs(timestamp);
+
 
 CREATE TABLE IF NOT EXISTS service_state (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

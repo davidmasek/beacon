@@ -1,7 +1,6 @@
 package reporting
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -107,22 +106,6 @@ func ReportFailedService(db storage.Storage, config *conf.Config, serviceCfg *co
 	return errors.Join(err, dbErr)
 }
 
-func WebCheckJob(db storage.Storage, config *conf.Config, now time.Time) error {
-	logger := logging.Get()
-	doCheckWeb, err := scheduler.ShouldCheckWebServices(db, config, now)
-	if err != nil {
-		return err
-	}
-	if doCheckWeb {
-		logger.Info("Checking web services...")
-		err = monitor.CheckWebServices(db, config.AllServices())
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func SummaryReportJob(reports []ServiceReport, db storage.Storage, config *conf.Config, now time.Time) error {
 	logger := logging.Get()
 	doReport, err := scheduler.ShouldReport(db, config, now)
@@ -159,52 +142,4 @@ func FailsReportJob(reports []ServiceReport, db storage.Storage, config *conf.Co
 		}
 	}
 	return nil
-}
-
-func RunAllJobs(db storage.Storage, config *conf.Config, now time.Time) error {
-	logger := logging.Get()
-	logger.Info("Do scheduling work")
-
-	err := WebCheckJob(db, config, now)
-	if err != nil {
-		return err
-	}
-	reports, err := GenerateReport(db, config)
-	if err != nil {
-		return err
-	}
-	err = SummaryReportJob(reports, db, config, now)
-	if err != nil {
-		return err
-	}
-	err = FailsReportJob(reports, db, config, now)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// Run periodic jobs.
-// Config: SCHEDULER_PERIOD (duration)
-//
-// Run first pass immediately.
-//
-// Will not call run next job again until previous one returns, even
-// if specified interval passes.
-func Start(ctx context.Context, db storage.Storage, config *conf.Config) {
-	logger := logging.Get()
-	checkInterval := config.SchedulerPeriod
-	err := scheduler.InitializeSentinel(db, time.Now())
-	if err != nil {
-		logger.Errorw("Failed to initialize job sentinel", zap.Error(err))
-	}
-
-	if err = RunAllJobs(db, config, time.Now()); err != nil {
-		logger.Errorw("Scheduling work failed", zap.Error(err))
-	}
-
-	logger.Infow("Starting scheduler", "checkInterval", checkInterval)
-	scheduler.StartFunction(ctx, checkInterval, func(now time.Time) error {
-		return RunAllJobs(db, config, now)
-	})
 }

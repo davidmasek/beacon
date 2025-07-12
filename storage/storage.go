@@ -92,6 +92,8 @@ type Storage interface {
 	ListSchemaVersions() ([]SchemaVersion, error)
 
 	DropTasks() error
+	PruneHealthChecks(before time.Time) (int64, error)
+	PruneTasks(before time.Time) (int64, error)
 }
 
 // https://www.sqlite.org/lang_select.html#limitoffset
@@ -491,4 +493,28 @@ func (s *SQLStorage) DropTasks() error {
 	const sentinel = "SENTINEL"
 	_, err := s.db.Exec("DELETE FROM task_logs WHERE status != ?", sentinel)
 	return err
+}
+
+func (s *SQLStorage) PruneHealthChecks(before time.Time) (int64, error) {
+	beforeStr := before.UTC().Format(TIME_FORMAT)
+
+	res, err := s.db.Exec(`
+		DELETE FROM health_checks
+		WHERE timestamp < ?`, beforeStr)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
+func (s *SQLStorage) PruneTasks(before time.Time) (int64, error) {
+	beforeStr := before.UTC().Format(TIME_FORMAT)
+
+	res, err := s.db.Exec(`
+		DELETE FROM task_logs
+		WHERE timestamp < ?`, beforeStr)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
 }

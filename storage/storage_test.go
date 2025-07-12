@@ -408,3 +408,77 @@ func TestHealthChecksSince(t *testing.T) {
 	last := hc[len(hc)-1]
 	require.Equal(t, "FAIL", last.Metadata["status"])
 }
+
+func TestPruneHealthChecks(t *testing.T) {
+	db := NewTestDb(t)
+	defer db.Close()
+
+	base := time.Date(2023, 2, 5, 13, 45, 12, 21, time.UTC)
+	// We do not store timestamps with sub-second precision.
+	// If "cutoff" is also pruned could depend on rounding.
+	// We do not care about the exact cutoff (plus minus a second)
+	// so we do not test the exact timestamp.
+	cutoff := base.AddDate(1, 0, 0)
+	timestamps := []time.Time{
+		base,
+		base.AddDate(-1, 0, 0),
+		base.AddDate(-1, 1, 0),
+		base.AddDate(-1, 2, 0),
+		cutoff.AddDate(0, 0, 1),
+		cutoff.AddDate(0, 0, 2),
+		cutoff.AddDate(0, 1, 2),
+	}
+
+	for _, timestamp := range timestamps {
+		err := db.AddHealthCheck(&HealthCheckInput{
+			ServiceId: "foo", Timestamp: timestamp,
+		})
+		require.NoError(t, err)
+	}
+
+	deleted, err := db.PruneHealthChecks(cutoff)
+	require.NoError(t, err)
+	require.EqualValues(t, 4, deleted, "expected 4 rows pruned")
+
+	hc, err := db.LatestHealthChecks("foo", 100)
+	require.NoError(t, err)
+	require.EqualValues(t, 3, len(hc), "expected 3 rows remaining")
+}
+
+func TestPruneTasks(t *testing.T) {
+	db := NewTestDb(t)
+	defer db.Close()
+
+	base := time.Date(2024, 1, 4, 0, 23, 55, 0, time.UTC)
+	// We do not store timestamps with sub-second precision.
+	// If "cutoff" is also pruned could depend on rounding.
+	// We do not care about the exact cutoff (plus minus a second)
+	// so we do not test the exact timestamp.
+	cutoff := base.AddDate(1, 0, 0)
+	latest := cutoff.AddDate(10, 30, 2)
+	timestamps := []time.Time{
+		base,
+		base.AddDate(-2, 0, 0),
+		base.AddDate(-1, 2, 3),
+		base.AddDate(-1, 4, 0),
+		cutoff.AddDate(0, 0, 1),
+		cutoff.AddDate(0, 0, 1),
+		cutoff.AddDate(0, 0, 5),
+		latest,
+	}
+
+	for _, timestamp := range timestamps {
+		err := db.CreateTaskLog(TaskInput{
+			TaskName: "foo", Timestamp: timestamp,
+		})
+		require.NoError(t, err)
+	}
+
+	deleted, err := db.PruneTasks(cutoff)
+	require.NoError(t, err)
+	require.EqualValues(t, 4, deleted, "expected 4 rows pruned")
+
+	task, err := db.LatestTaskLog("foo")
+	require.NoError(t, err)
+	require.WithinDuration(t, latest, task.Timestamp, time.Second)
+}
