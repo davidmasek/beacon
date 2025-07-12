@@ -292,3 +292,8 @@ python -m pip install -r requirements-dev.txt
 # 4. keeps containers running (for inspection, if needed)
 python test_docker.py
 ```
+
+Linting:
+```
+golangci-lint run
+```
