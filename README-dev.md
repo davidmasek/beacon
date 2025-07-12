@@ -72,6 +72,8 @@ air start
     - should cover also report content
 - 🟢 db cleanup
   - remove old data
+- TODO more testing for reporting and especially emails
+- TODO remove unused code (user management, possibly others)
 
 ## 🛠️ Implementation
 
