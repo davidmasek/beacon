@@ -204,11 +204,10 @@ func DefaultConfigFrom(configFile string) (*Config, error) {
 	return configFromFile(configFile)
 }
 
-// Empty config
+// Default config
 func NewConfig() *Config {
 	config := &Config{
-		Timezone: TzLocation{time.Local},
-		// todo[defaults]: better defaults approach
+		Timezone:               TzLocation{time.Local},
 		ReportAfter:            17,
 		Port:                   8088,
 		SchedulerPeriod:        15 * time.Minute,
