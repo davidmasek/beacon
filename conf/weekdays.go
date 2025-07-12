@@ -83,7 +83,7 @@ func (s *WeekdaysSet) ParseString(value string) error {
 		case "sat":
 			days[time.Saturday] = true
 		default:
-			return fmt.Errorf("Unexpected value %q - expecting Mon/Tue/... or Monday/..., failed to parse %q", dayStr, value)
+			return fmt.Errorf("unexpected value %q - expecting Mon/Tue/... or Monday/..., failed to parse %q", dayStr, value)
 		}
 	}
 	s.days = days
