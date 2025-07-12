@@ -71,7 +71,7 @@ func expectedStatusFromName(t *testing.T, name string) monitor.ServiceStatus {
 	return monitor.STATUS_FAIL
 }
 
-func TestRunSingle(t *testing.T) {
+func TestRunAllJobs(t *testing.T) {
 	logger := logging.InitTest(t)
 
 	db := storage.NewTestDb(t)
@@ -122,7 +122,7 @@ services:
 	t.Logf("Using tmp file: %q\n", tmp_file)
 
 	config.ReportName = tmp_file
-	err = RunSingle(db, config, time.Now())
+	err = RunAllJobs(db, config, time.Now())
 	require.NoError(t, err)
 	require.FileExists(t, tmp_file)
 

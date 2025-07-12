@@ -107,11 +107,8 @@ func ReportFailedService(db storage.Storage, config *conf.Config, serviceCfg *co
 	return errors.Join(err, dbErr)
 }
 
-func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
+func WebCheckJob(db storage.Storage, config *conf.Config, now time.Time) error {
 	logger := logging.Get()
-	logger.Info("Do scheduling work")
-
-	var err error
 	doCheckWeb, err := scheduler.ShouldCheckWebServices(db, config, now)
 	if err != nil {
 		return err
@@ -123,11 +120,12 @@ func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func SummaryReportJob(reports []ServiceReport, db storage.Storage, config *conf.Config, now time.Time) error {
+	logger := logging.Get()
 	doReport, err := scheduler.ShouldReport(db, config, now)
-	if err != nil {
-		return err
-	}
-	reports, err := GenerateReport(db, config)
 	if err != nil {
 		return err
 	}
@@ -138,12 +136,17 @@ func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func FailsReportJob(reports []ServiceReport, db storage.Storage, config *conf.Config, now time.Time) error {
+	logger := logging.Get()
 	for _, report := range reports {
 		if report.ServiceStatus == monitor.STATUS_OK {
 			continue
 		}
 		logger.Debugw("Service not OK", "service", report.ServiceCfg.Id)
-		doReport, err = scheduler.ShouldReportFailedService(db, &report.ServiceCfg, now)
+		doReport, err := scheduler.ShouldReportFailedService(db, &report.ServiceCfg, now)
 		if err != nil {
 			return err
 		}
@@ -155,7 +158,30 @@ func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 			}
 		}
 	}
-	return err
+	return nil
+}
+
+func RunAllJobs(db storage.Storage, config *conf.Config, now time.Time) error {
+	logger := logging.Get()
+	logger.Info("Do scheduling work")
+
+	err := WebCheckJob(db, config, now)
+	if err != nil {
+		return err
+	}
+	reports, err := GenerateReport(db, config)
+	if err != nil {
+		return err
+	}
+	err = SummaryReportJob(reports, db, config, now)
+	if err != nil {
+		return err
+	}
+	err = FailsReportJob(reports, db, config, now)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Run periodic jobs.
@@ -173,12 +199,12 @@ func Start(ctx context.Context, db storage.Storage, config *conf.Config) {
 		logger.Errorw("Failed to initialize job sentinel", zap.Error(err))
 	}
 
-	if err = RunSingle(db, config, time.Now()); err != nil {
+	if err = RunAllJobs(db, config, time.Now()); err != nil {
 		logger.Errorw("Scheduling work failed", zap.Error(err))
 	}
 
 	logger.Infow("Starting scheduler", "checkInterval", checkInterval)
 	scheduler.StartFunction(ctx, checkInterval, func(now time.Time) error {
-		return RunSingle(db, config, now)
+		return RunAllJobs(db, config, now)
 	})
 }
