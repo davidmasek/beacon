@@ -1,3 +1,5 @@
+# Linter
+
 name: golangci-lint
 on:
   push:
