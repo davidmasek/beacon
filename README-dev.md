@@ -29,7 +29,7 @@ air start
 - 🟢 web GUI
   - 🟢 display the main information
     - management supported by a config file
-  - 🟡 support auth
+  - auth for web GUI can be provided by (reverse)proxy (e.g. NGINX)
   - 🟢 unify ports - run on same port as HB listener
 - 🟢 website monitor (periodic website checking)
   - 🟢 basic version done
@@ -70,9 +70,8 @@ air start
     - maybe for reports in the future
   - 🟡 end-to-end Docker test
     - should cover also report content
-- TODO: db cleanup
-  - remove old record?
-  - delete services option?
+- 🟢 db cleanup
+  - remove old data
 
 ## 🛠️ Implementation
 
