@@ -17,13 +17,42 @@ import (
 	"go.uber.org/zap"
 )
 
-//go:embed templates/*
-var TEMPLATES embed.FS
-
 const (
 	SUMMARY_STATS_LOOKBACK = -30 * 24 * time.Hour
 	SUMMARY_STATS_INTERVAL = 30 * time.Minute
 )
+
+var (
+	//go:embed templates/*
+	TEMPLATES      embed.FS
+	INDEX_TEMPLATE *template.Template
+	ABOUT_TEMPLATE *template.Template
+)
+
+func init() {
+	funcMap := template.FuncMap{
+		"HealthCheckStatus": monitor.HealthCheckStatus,
+		"TimeAgo":           TimeAgo,
+	}
+
+	tmpl := template.New("index.html").Funcs(funcMap)
+	tmpl = template.Must(tmpl.ParseFS(TEMPLATES,
+		filepath.Join("templates", "index.html"),
+		filepath.Join("templates", "header.html"),
+		filepath.Join("templates", "common.css"),
+	))
+
+	INDEX_TEMPLATE = tmpl
+
+	tmpl = template.New("about.html").Funcs(funcMap)
+	tmpl = template.Must(tmpl.ParseFS(TEMPLATES,
+		filepath.Join("templates", "about.html"),
+		filepath.Join("templates", "header.html"),
+		filepath.Join("templates", "common.css"),
+	))
+
+	ABOUT_TEMPLATE = tmpl
+}
 
 // Human-readable time difference (e.g., "5 minutes ago")
 func TimeAgo(t time.Time) string {
@@ -97,27 +126,9 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 			})
 		}
 
-		funcMap := template.FuncMap{
-			"HealthCheckStatus": monitor.HealthCheckStatus,
-			"TimeAgo":           TimeAgo,
-		}
-
-		tmpl := template.New("index.html").Funcs(funcMap)
-		// todo: might want to parse this only once
-		tmpl, err := tmpl.ParseFS(TEMPLATES,
-			filepath.Join("templates", "index.html"),
-			filepath.Join("templates", "header.html"),
-			filepath.Join("templates", "common.css"),
-		)
-		if err != nil {
-			logger.Errorw("Error parsing template", zap.Error(err))
-			http.Error(w, "Failed to render page", http.StatusInternalServerError)
-			return
-		}
-
 		emailMissingConfig := config.EmailConf.MissingConfigurationFields()
 
-		err = tmpl.Execute(w, map[string]any{
+		err := INDEX_TEMPLATE.Execute(w, map[string]any{
 			"services":           services,
 			"CurrentPage":        "home",
 			"EmailMissingConfig": emailMissingConfig,
@@ -133,17 +144,6 @@ func handleIndex(db storage.Storage, config *conf.Config) http.HandlerFunc {
 func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger := logging.Get()
-		tmpl := template.New("about.html")
-		tmpl, err := tmpl.ParseFS(TEMPLATES,
-			filepath.Join("templates", "about.html"),
-			filepath.Join("templates", "header.html"),
-			filepath.Join("templates", "common.css"),
-		)
-		if err != nil {
-			logger.Errorw("Error parsing template", zap.Error(err))
-			http.Error(w, "Failed to render page", http.StatusInternalServerError)
-			return
-		}
 
 		timeFormat := "15:04 Monday 02 January"
 		lastReport, err := db.LatestTaskLog("report")
@@ -191,7 +191,7 @@ func handleAbout(db storage.Storage, config *conf.Config) http.HandlerFunc {
 
 		zone, offset := time.Now().In(config.Timezone.Location).Zone()
 
-		err = tmpl.Execute(w, map[string]any{
+		err = ABOUT_TEMPLATE.Execute(w, map[string]any{
 			"lastReportTime":        lastReportTime,
 			"lastReportStatus":      lastReportStatus,
 			"serverTime":            serverTime,
