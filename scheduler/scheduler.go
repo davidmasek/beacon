@@ -13,9 +13,21 @@ import (
 // report daily (might be made configurable later)
 const FailedServiceReportInterval = 24 * time.Hour
 
-func ShouldCheckWebServices(db storage.Storage, config *conf.Config, now time.Time) bool {
-	// TODO - should follow some config or smth
-	return true
+func ShouldCheckWebServices(db storage.Storage, config *conf.Config, now time.Time) (bool, error) {
+	task, err := db.LatestTaskLog("web_check")
+	if err != nil {
+		return false, err
+	}
+	if task == nil {
+		return true, nil
+	}
+	// retry immediately if previous attempt failed
+	if task.Status == string(storage.TASK_ERROR) {
+		return true, nil
+	}
+	nextReportTime := task.Timestamp.Add(config.WebCheckPeriod)
+	isAfter := now.After(nextReportTime)
+	return isAfter, nil
 }
 
 // Calculate when the next report should happen based on last report time.

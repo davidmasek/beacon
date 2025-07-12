@@ -130,6 +130,7 @@ type Config struct {
 	ReportName      string        `yaml:"report_name" env:"REPORT_NAME"`
 	Port            int           `yaml:"port" env:"PORT"`
 	SchedulerPeriod time.Duration `yaml:"scheduler_period" env:"SCHEDULER_PERIOD"`
+	WebCheckPeriod  time.Duration `yaml:"web_check_period" env:"WEB_CHECK_PERIOD"`
 
 	EmailConf EmailConfig `yaml:"email" envPrefix:"EMAIL_"`
 
@@ -211,6 +212,7 @@ func NewConfig() *Config {
 		ReportAfter:            17,
 		Port:                   8088,
 		SchedulerPeriod:        15 * time.Minute,
+		WebCheckPeriod:         15 * time.Minute,
 		AllowUnknownHeartbeats: true,
 		RequireHeartbeatAuth:   false,
 		envPrefix:              ENV_VAR_PREFIX,

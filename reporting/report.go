@@ -112,7 +112,11 @@ func RunSingle(db storage.Storage, config *conf.Config, now time.Time) error {
 	logger.Info("Do scheduling work")
 
 	var err error
-	if scheduler.ShouldCheckWebServices(db, config, now) {
+	doCheckWeb, err := scheduler.ShouldCheckWebServices(db, config, now)
+	if err != nil {
+		return err
+	}
+	if doCheckWeb {
 		logger.Info("Checking web services...")
 		err = monitor.CheckWebServices(db, config.AllServices())
 		if err != nil {
