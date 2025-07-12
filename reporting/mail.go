@@ -3,7 +3,6 @@ package reporting
 import (
 	"bytes"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -19,14 +18,6 @@ type ServiceReport struct {
 	ServiceStatus     monitor.ServiceStatus
 	LatestHealthCheck *storage.HealthCheck
 	ServiceCfg        conf.ServiceConfig
-}
-
-func prettyPrint(details map[string]string) string {
-	jsonData, err := json.MarshalIndent(details, "", "  ")
-	if err != nil {
-		panic(fmt.Errorf("failed to marshal details map: %w", err))
-	}
-	return string(jsonData)
 }
 
 func sendReport(reports []ServiceReport, emailConfig *conf.EmailConfig) error {
@@ -52,7 +43,7 @@ func sendReport(reports []ServiceReport, emailConfig *conf.EmailConfig) error {
 		}
 	}
 
-	statusSummary := "Status Report"
+	var statusSummary string
 	if nServices == nGood {
 		statusSummary = "All Good"
 	} else {
