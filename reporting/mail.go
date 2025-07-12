@@ -101,9 +101,12 @@ func SendMail(emailConfig *conf.EmailConfig, subject string, body string) error 
 		tlsSkipVerify = true
 	}
 	if tlsSkipVerify {
-		client.SetTLSConfig(&tls.Config{
+		err = client.SetTLSConfig(&tls.Config{
 			InsecureSkipVerify: true,
 		})
+		if err != nil {
+			return err
+		}
 	}
 
 	if emailConfig.SmtpSSL {

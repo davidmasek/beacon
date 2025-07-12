@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"io"
@@ -76,7 +77,7 @@ func checkWebsite(config *webConfig) (ServiceStatus, error) {
 }
 
 // Check website and return status
-func (config *webConfig) checkWebsite(ctx context.Context) (ServiceStatus, error) {
+func (config *webConfig) checkWebsite(ctx context.Context) (status ServiceStatus, err error) {
 	logger := logging.Get()
 	req, err := http.NewRequestWithContext(ctx, "GET", config.Url, nil)
 	if err != nil {
@@ -91,7 +92,14 @@ func (config *webConfig) checkWebsite(ctx context.Context) (ServiceStatus, error
 		return STATUS_FAIL, err
 	}
 	// When err is nil, resp always contains a non-nil resp.Body
-	defer resp.Body.Close()
+	defer func() {
+		closeErr := resp.Body.Close()
+		if closeErr != nil {
+			logger.Errorw("Web check failed - failed to close resp body", zap.Error(err), "config", config)
+			err = errors.Join(err, closeErr)
+			status = STATUS_FAIL
+		}
+	}()
 	codeOk := slices.Contains(config.HttpStatus, resp.StatusCode)
 	if !codeOk {
 		logger.Debugw("Web check failed", "cause", "Unexpected status code", "expected", config.HttpStatus, "got", resp.StatusCode)

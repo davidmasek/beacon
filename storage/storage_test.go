@@ -24,8 +24,10 @@ func TestDbPath(t *testing.T) {
 	_, err = InitDB("")
 	assert.Nil(t, err)
 	assert.FileExists(t, tmp_file)
-	os.Remove(tmp_file)
-	os.Remove(dir)
+	err = os.Remove(tmp_file)
+	require.NoError(t, err)
+	err = os.Remove(dir)
+	require.NoError(t, err)
 }
 
 // Return multiple ordered timestamps (newest first)

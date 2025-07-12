@@ -70,7 +70,8 @@ services:
 `
 	file, err := os.CreateTemp("", "test_token")
 	require.NoError(t, err)
-	os.WriteFile(file.Name(), []byte("AaaDmh9Yr5rycRPHxb7nCDa\n"), 0644)
+	err = os.WriteFile(file.Name(), []byte("AaaDmh9Yr5rycRPHxb7nCDa\n"), 0644)
+	require.NoError(t, err)
 
 	configStr := fmt.Sprintf(configTemplate, file.Name())
 

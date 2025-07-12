@@ -2,6 +2,7 @@ package reporting
 
 import (
 	"embed"
+	"errors"
 	"html/template"
 	"io"
 	"os"
@@ -35,7 +36,10 @@ func WriteReportToFile(reports []ServiceReport, filename string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		closeErr := file.Close()
+		err = errors.Join(closeErr, err)
+	}()
 
 	err = WriteReport(reports, file)
 	return err

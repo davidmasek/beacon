@@ -12,7 +12,7 @@ var debugCmd = &cobra.Command{
 	Use: "debug",
 	// Args:  cobra.ExactArgs(0),
 	Short: "Development tools, use with caution",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		logger := logging.Get()
 		logger.Warn("Debug CLI - Use with caution")
 		deleteTasks, err := cmd.Flags().GetBool("delete-tasks")
@@ -31,7 +31,12 @@ var debugCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to initialize database: %w", err)
 		}
-		defer db.Close()
+		defer func() {
+			closeErr := db.Close()
+			if err != nil {
+				err = closeErr
+			}
+		}()
 		if listSchema {
 			cmd.Println("DB Schema:")
 			schemas, err := db.ListSchemaVersions()

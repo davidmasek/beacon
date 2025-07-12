@@ -79,7 +79,10 @@ func TestRunSingle(t *testing.T) {
 
 	beaconGithub := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Beacon Github Page"))
+		_, err := w.Write([]byte("Beacon Github Page"))
+		if err != nil {
+			logger.Error("Failed to write response form BeaconGithub test server")
+		}
 	}))
 	defer beaconGithub.Close()
 	tsFail := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

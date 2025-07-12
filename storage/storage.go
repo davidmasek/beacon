@@ -217,13 +217,16 @@ func (s *SQLStorage) ValidateUser(email string, inputPassword string) (*User, er
 }
 
 // List all distinct services, sorted alphabetically
-func (s *SQLStorage) ListServices() ([]string, error) {
+func (s *SQLStorage) ListServices() (services []string, err error) {
 	rows, err := s.db.Query(`SELECT DISTINCT service_id FROM health_checks ORDER BY service_id ASC`)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	services := make([]string, 0)
+	defer func() {
+		closeErr := rows.Close()
+		err = errors.Join(err, closeErr)
+	}()
+	services = make([]string, 0)
 	for rows.Next() {
 		var serviceID string
 		if err := rows.Scan(&serviceID); err != nil {
@@ -252,13 +255,16 @@ func (s *SQLStorage) RecordHeartbeat(serviceId string, timestamp time.Time) (str
 	return timestampStr, err
 }
 
-func (s *SQLStorage) GetLatestHeartbeats(serviceId string, limit int) ([]time.Time, error) {
-	timestamps := make([]time.Time, 0)
+func (s *SQLStorage) GetLatestHeartbeats(serviceId string, limit int) (timestamps []time.Time, err error) {
+	timestamps = make([]time.Time, 0)
 	rows, err := s.db.Query("SELECT timestamp FROM health_checks WHERE service_id = ? ORDER BY timestamp DESC LIMIT ?", serviceId, limit)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		closeErr := rows.Close()
+		err = errors.Join(err, closeErr)
+	}()
 	for rows.Next() {
 		var timestampStr string
 		err := rows.Scan(&timestampStr)
@@ -274,7 +280,7 @@ func (s *SQLStorage) GetLatestHeartbeats(serviceId string, limit int) ([]time.Ti
 	return timestamps, nil
 }
 
-func (s *SQLStorage) HealthChecksSince(serviceId string, since time.Time) ([]*HealthCheck, error) {
+func (s *SQLStorage) HealthChecksSince(serviceId string, since time.Time) (healthChecks []*HealthCheck, err error) {
 	sinceStr := since.UTC().Format(time.RFC3339)
 	rows, err := s.db.Query(`
 	SELECT
@@ -293,9 +299,12 @@ func (s *SQLStorage) HealthChecksSince(serviceId string, since time.Time) ([]*He
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		closeErr := rows.Close()
+		err = errors.Join(err, closeErr)
+	}()
 
-	healthChecks := make([]*HealthCheck, 0)
+	healthChecks = make([]*HealthCheck, 0)
 	for rows.Next() {
 		healthCheck, err := rowToHealthCheck(rows)
 		if err != nil {
@@ -306,7 +315,7 @@ func (s *SQLStorage) HealthChecksSince(serviceId string, since time.Time) ([]*He
 	return healthChecks, nil
 }
 
-func (s *SQLStorage) LatestHealthChecks(serviceId string, limit int) ([]*HealthCheck, error) {
+func (s *SQLStorage) LatestHealthChecks(serviceId string, limit int) (healthChecks []*HealthCheck, err error) {
 	rows, err := s.db.Query(`
 	SELECT
 		id,
@@ -325,8 +334,11 @@ func (s *SQLStorage) LatestHealthChecks(serviceId string, limit int) ([]*HealthC
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	healthChecks := make([]*HealthCheck, 0)
+	defer func() {
+		closeErr := rows.Close()
+		err = errors.Join(err, closeErr)
+	}()
+	healthChecks = make([]*HealthCheck, 0)
 	for rows.Next() {
 		healthCheck, err := rowToHealthCheck(rows)
 		if err != nil {
@@ -446,15 +458,18 @@ func InitDB(dbPath string) (Storage, error) {
 	return db, nil
 }
 
-func (s *SQLStorage) ListSchemaVersions() ([]SchemaVersion, error) {
+func (s *SQLStorage) ListSchemaVersions() (versions []SchemaVersion, err error) {
 	logger := logging.Get()
 	rows, err := s.db.Query(`SELECT version, applied_at FROM schema_version ORDER BY version DESC`)
 	if err != nil {
 		logger.Errorw("Failed query", zap.Error(err))
 		return nil, err
 	}
-	defer rows.Close()
-	versions := make([]SchemaVersion, 0)
+	defer func() {
+		closeErr := rows.Close()
+		err = errors.Join(err, closeErr)
+	}()
+	versions = make([]SchemaVersion, 0)
 	for rows.Next() {
 		var timestampStr string
 		var version int

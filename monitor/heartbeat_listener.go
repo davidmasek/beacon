@@ -107,7 +107,10 @@ func handleBeat(db storage.Storage, config *conf.Config) http.HandlerFunc {
 		// Respond to the client
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		err = json.NewEncoder(w).Encode(response)
+		if err != nil {
+			logger.Error("Failed to encode /beat response", zap.Error(err))
+		}
 	}
 }
 
@@ -148,6 +151,9 @@ func handleStatus(db storage.Storage, config *conf.Config) http.HandlerFunc {
 		// Respond to the client
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		err = json.NewEncoder(w).Encode(response)
+		if err != nil {
+			logger.Error("Failed to encode /status response", zap.Error(err))
+		}
 	}
 }
