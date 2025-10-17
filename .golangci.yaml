@@ -1,9 +1,0 @@
-version: "2"
-linters:
-  exclusions:
-    # Log a warning if an exclusion rule is unused.
-    warn-unused: true
-    rules:
-      - path: _test\.go
-        linters:
-          - errcheck
