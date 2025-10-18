@@ -20,16 +20,15 @@ Web GUI example:
 
 ## 🚀 Quickstart
 
-Beacon can be easily installed anywhere [Go](https://go.dev/) is available.
-
 1. **Install Beacon**
 ```sh
-go install github.com/davidmasek/beacon@latest
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 2. **Start the Server**
 ```sh
-# start server
-beacon start --config config.sample.yaml
+fastapi dev beacon/main.py
 ```
 3. **Monitor Your Services**
 - Website Monitoring: Use the configuration file to specify URLs for automatic periodic checks.
@@ -244,36 +243,13 @@ You can specify different path using the `BEACON_DB` env variable.
 
 If using Docker, mount the database file to persist data between container restarts.
 
-## 🌟  Beacon status
-
-Beacon is now stable. I use it for my personal projects.
-
-Beacon is easily deployable as Docker container or installed as Go application.
-
-Beacon reached v1 🎉 . You should be able to upgrade from any v1.X version to any higher v1.X version.
-
-Feel free to submit bugs or feature requests as Issues on GitHub.
-
-## ⚙️ Build
-
-```sh
-# build a single binary called `beacon`
-go build
-```
-
 ## 🔬  Test
 
-The Go tests are intended as the main testing component. They should run fast so you can iterate quickly during development. They should cover main functionality (server, CLI, reporting, ...), including reasonable fail scenarios (incorrect requests, config, ...).
+The unit tests are intended as the main testing component. They should run fast so you can iterate quickly during development. They should cover main functionality (server, CLI, reporting, ...), including reasonable fail scenarios (incorrect requests, config, ...).
 
-Run Go tests:
+Run unit tests:
 ```sh
-go test ./...
-# verbose mode
-go test -v ./...
-# disable cache
-go test -count=1 ./...
-# with code coverage
-go test ./... -coverprofile cover.out
+pytest beacon
 ```
 
 Additionally there is a script for integration testing using Docker. This script has two goals. First, it tests
@@ -286,16 +262,11 @@ Run testing script for Docker:
 # tested with Python 3.10, any recent Python should work
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements-dev.txt
+python -m pip install -r requirements.txt
 # the script:
 # 1. stops currently running containers with `docker compose down`
 # 2. rebuilds the containers
 # 3. runs tests
 # 4. keeps containers running (for inspection, if needed)
 python test_docker.py
-```
-
-Linting:
-```
-golangci-lint run
 ```
