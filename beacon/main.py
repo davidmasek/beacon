@@ -1,11 +1,13 @@
 from fastapi import FastAPI
 from beacon.db import create_tables
 from beacon import heartbeat
+from beacon import service
 
 
 app = FastAPI()
 
 app.include_router(heartbeat.router)
+app.include_router(service.router)
 
 
 @app.on_event("startup")

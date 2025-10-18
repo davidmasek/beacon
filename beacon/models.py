@@ -3,75 +3,48 @@ from sqlalchemy import (
     Integer,
     String,
     DateTime,
-    ForeignKey,
-    Index,
     Text,
 )
-from sqlalchemy.orm import relationship, declarative_base
-from sqlalchemy.sql import func
+from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
 
-class User(Base):
-    __tablename__ = "users"
-    __table_args__ = (Index("idx_users_email", "email", unique=True),)
+class Service(Base):
+    __tablename__ = "services"
 
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, nullable=False)
-    password_hash = Column(String, nullable=False)
-    created_at = Column(DateTime, default=func.now())
-
-    # Relationships (Optional but helpful)
-    health_checks = relationship("HealthCheck", back_populates="owner")
+    service_name = Column(String, nullable=False, index=True, unique=True)
+    url = Column(String, nullable=True)
 
 
 class HealthCheck(Base):
     __tablename__ = "health_checks"
-    __table_args__ = (Index("idx_health_checks_timestamp", "timestamp"),)
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
-    service_id = Column(String, nullable=False)
-    timestamp = Column(DateTime, default=func.now())
-    meta_data = Column("metadata", Text)
-
-    # Relationships
-    owner = relationship("User", back_populates="health_checks")
+    service_id = Column(String, nullable=False, index=True)
+    timestamp = Column(DateTime, nullable=False, index=True)
+    details = Column(Text)
 
 
 class TaskLog(Base):
     __tablename__ = "task_logs"
-    __table_args__ = (Index("idx_task_logs_timestamp", "timestamp"),)
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer)  # No FK constraint based on your SQL
     task_name = Column(String, nullable=False)
-    timestamp = Column(DateTime, default=func.now())
+    timestamp = Column(DateTime, nullable=False)
     status = Column(String, nullable=False)
     details = Column(Text)
 
 
 class ServiceState(Base):
-    __tablename__ = "service_state"
-    __table_args__ = (Index("idx_service_state_service_id", "service_id", unique=True),)
+    __tablename__ = "service_states"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer)  # No FK constraint based on your SQL
-    service_id = Column(String, unique=True, nullable=False)
+    service_id = Column(String, nullable=False)
     status = Column(String, nullable=False)
-    last_reported_status = Column(String)
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-
-
-class SchemaVersion(Base):
-    __tablename__ = "schema_version"
-
-    # NOTE: Since your original SQL doesn't define a PK, a composite or a
-    # single non-nullable column must be chosen for SQLAlchemy.
-    # I'll use `version` as the primary key for simplicity, though this might need adjustment.
-    version = Column(Integer, primary_key=True, nullable=False)
-    applied_at = Column(DateTime, default=func.now())
+    timestamp = Column(DateTime, nullable=False)
+    details = Column(Text)
 
 
 __all__ = [
@@ -79,5 +52,4 @@ __all__ = [
     "HealthCheck",
     "TaskLog",
     "ServiceState",
-    "SchemaVersion",
 ]

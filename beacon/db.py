@@ -2,7 +2,7 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from beacon.models import Base, SchemaVersion
+from beacon.models import Base
 
 db_path = Path.home() / "beacon.db"
 
@@ -33,24 +33,9 @@ def get_db():
 # --- Models ---
 
 
-# --- Database Initialization Function ---
 def create_tables():
     """Creates all defined tables in the database."""
     Base.metadata.create_all(bind=engine)
-
-    # Handle the initial INSERT for schema_version
-    db = SessionLocal()
-    try:
-        count = db.query(SchemaVersion).count()
-        if count == 0:
-            initial_version = SchemaVersion(version=1)
-            db.add(initial_version)
-            db.commit()
-    except Exception as e:
-        db.rollback()
-        print(f"Error during initial schema_version insert: {e}")
-    finally:
-        db.close()
 
 
 if __name__ == "__main__":
