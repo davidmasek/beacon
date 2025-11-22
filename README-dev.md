@@ -13,7 +13,8 @@ Beware that this file may be out of date.
 export BEACON_LOGS="dev"
 export LOG_LEVEL="debug"
 # hot-reload server
-air start
+# go get -tool github.com/air-verse/air@latest
+go tool air start
 ```
 
 ## 🚧 Feature list:
