@@ -30,7 +30,7 @@ services:
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: "${RABBITMQ_DEFAULT_USER:-testyusy}"
-      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_DEFAULT_USER:-testyusy}"
+      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_DEFAULT_PASS:-testyusy}"
 
   # SMTP server for development and testing.
   # For production configure your SMTP inside the Beacon config file instead.
