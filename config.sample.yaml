@@ -30,3 +30,5 @@ email:
 timezone: "Europe/Prague"
 # 17 == 5pm, and so on
 report_time: 17
+
+rabbit_conn: "amqp://testyusy:testyusy@beacon-rabbitmq:5672/"

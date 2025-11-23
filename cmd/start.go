@@ -63,8 +63,15 @@ var startCmd = &cobra.Command{
 			logger.Warnw("Email not configured", "missing fields", missingFields)
 		}
 
+		err = jobs.VerifyQueueConnection(config)
+		if err != nil {
+			logger.Errorw("Cannot connect to RabbitMQ", zap.Error((err)))
+			return err
+		}
+
 		ctx, cancelScheduler := context.WithCancel(context.Background())
 		go jobs.Start(ctx, db, config)
+		go jobs.ReadTasks(ctx, db, config)
 
 		if stopServer {
 			err = server.Close()

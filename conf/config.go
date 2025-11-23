@@ -139,6 +139,9 @@ type Config struct {
 	AllowUnknownHeartbeats bool
 	RequireHeartbeatAuth   bool
 
+	// RabbitMQ connection string, "amqp://guest:guest@localhost:5672/"
+	RabbitConn string `yaml:"rabbit_conn" env:"RABBIT_CONN"`
+
 	envPrefix string
 }
 

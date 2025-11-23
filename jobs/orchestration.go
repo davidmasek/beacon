@@ -60,6 +60,6 @@ func Start(ctx context.Context, db storage.Storage, config *conf.Config) {
 
 	logger.Infow("Starting scheduler", "checkInterval", checkInterval)
 	scheduler.StartFunction(ctx, checkInterval, func(now time.Time) error {
-		return RunAllJobs(db, config, now)
+		return AddAll(db, config)
 	})
 }
